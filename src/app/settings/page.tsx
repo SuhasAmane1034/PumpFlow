@@ -22,7 +22,9 @@ import { i18n } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { language, settings, updateSettings, resetToDefault } = useStore();
-  const [activeTab, setActiveTab] = useState<"shop" | "bank" | "billing" | "whatsapp">("shop");
+  const [activeTab, setActiveTab] = useState<
+    "shop" | "bank" | "billing" | "whatsapp"
+  >("shop");
   const [formData, setFormData] = useState<BusinessSettings>(settings);
 
   useEffect(() => {
@@ -129,7 +131,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Form Content */}
-      <form onSubmit={handleSave} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <form
+        onSubmit={handleSave}
+        className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6"
+      >
         {/* 1. Shop Profile */}
         {activeTab === "shop" && (
           <div className="space-y-4 animate-in fade-in">
@@ -146,7 +151,9 @@ export default function SettingsPage() {
                   type="text"
                   required
                   value={formData.shop_name}
-                  onChange={(e) => setFormData({ ...formData, shop_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, shop_name: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                 />
               </div>
@@ -159,48 +166,66 @@ export default function SettingsPage() {
                   type="text"
                   required
                   value={formData.shop_owner}
-                  onChange={(e) => setFormData({ ...formData, shop_owner: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, shop_owner: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.tagline}</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.tagline}
+                </label>
                 <input
                   type="text"
                   value={formData.tagline}
-                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tagline: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.address} *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.address} *
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.cityDistrict}</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.cityDistrict}
+                </label>
                 <input
                   type="text"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, city: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.pincode}</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.pincode}
+                </label>
                 <input
                   type="text"
                   value={formData.pincode}
-                  onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pincode: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
@@ -213,7 +238,9 @@ export default function SettingsPage() {
                   type="text"
                   required
                   value={formData.contact_number}
-                  onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contact_number: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
@@ -226,18 +253,27 @@ export default function SettingsPage() {
                   type="text"
                   required
                   value={formData.whatsapp_number}
-                  onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      whatsapp_number: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.gstinNumber} *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.gstinNumber} *
+                </label>
                 <input
                   type="text"
                   required
                   value={formData.gstin}
-                  onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gstin: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono font-bold"
                 />
               </div>
@@ -249,7 +285,9 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={formData.state_code}
-                  onChange={(e) => setFormData({ ...formData, state_code: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, state_code: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
@@ -266,11 +304,15 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.bankName} *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.bankName} *
+                </label>
                 <input
                   type="text"
                   value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bank_name: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
                 />
               </div>
@@ -282,37 +324,54 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={formData.bank_account_number}
-                  onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      bank_account_number: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono font-bold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.ifscCode} *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.ifscCode} *
+                </label>
                 <input
                   type="text"
                   value={formData.bank_ifsc}
-                  onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bank_ifsc: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.branch}</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.branch}
+                </label>
                 <input
                   type="text"
                   value={formData.bank_branch}
-                  onChange={(e) => setFormData({ ...formData, bank_branch: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bank_branch: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.upiId} *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t.upiId} *
+                </label>
                 <input
                   type="text"
                   value={formData.upi_id}
-                  onChange={(e) => setFormData({ ...formData, upi_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, upi_id: e.target.value })
+                  }
                   placeholder="उदा. samarthpumps@sbi"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-sky-700 font-bold"
                 />
@@ -336,7 +395,9 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={formData.invoice_prefix}
-                  onChange={(e) => setFormData({ ...formData, invoice_prefix: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice_prefix: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
@@ -348,7 +409,12 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   value={formData.quotation_prefix}
-                  onChange={(e) => setFormData({ ...formData, quotation_prefix: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quotation_prefix: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
               </div>
@@ -360,7 +426,12 @@ export default function SettingsPage() {
                 <input
                   type="number"
                   value={formData.default_credit_days}
-                  onChange={(e) => setFormData({ ...formData, default_credit_days: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      default_credit_days: Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold"
                 />
               </div>
@@ -372,7 +443,9 @@ export default function SettingsPage() {
                 <textarea
                   rows={4}
                   value={formData.invoice_terms}
-                  onChange={(e) => setFormData({ ...formData, invoice_terms: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice_terms: e.target.value })
+                  }
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
@@ -388,18 +461,23 @@ export default function SettingsPage() {
             </h3>
 
             <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-slate-800 font-mono whitespace-pre-line space-y-1">
-              <p className="font-bold text-emerald-900">नमस्कार [ग्राहक नाव] जी,</p>
+              <p className="font-bold text-emerald-900">
+                नमस्कार [ग्राहक नाव] जी,
+              </p>
               <br />
               <p>
-                आपण *{formData.shop_name}* येथून खरेदी केलेल्या मालाचे *[बाकी रक्कम]* इतके पेमेंट बाकी
-                आहे.
+                आपण *{formData.shop_name}* येथून खरेदी केलेल्या मालाचे *[बाकी
+                रक्कम]* इतके पेमेंट बाकी आहे.
               </p>
               <br />
               <p>📄 *बिल क्रमांक:* INV-2026-00101</p>
               <p>📅 *अंतिम देय तारीख:* 25 Feb 2026</p>
               <p>💳 *UPI ID:* {formData.upi_id}</p>
               <br />
-              <p>कृपया आपले बाकी असलेले पेमेंट लवकरात लवकर पूर्ण करावे ही नम्र विनंती.</p>
+              <p>
+                कृपया आपले बाकी असलेले पेमेंट लवकरात लवकर पूर्ण करावे ही नम्र
+                विनंती.
+              </p>
               <p>पेमेंट झाल्यानंतर कृपया पोच पावती किंवा स्क्रीनशॉट पाठवावा.</p>
               <br />
               <p>धन्यवाद!</p>
@@ -422,4 +500,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

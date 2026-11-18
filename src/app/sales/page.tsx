@@ -18,7 +18,12 @@ import {
   X,
 } from "lucide-react";
 import { useStore } from "@/context/store-context";
-import { formatINR, formatDate, generateWhatsAppReminderMessage, getDaysOverdue } from "@/lib/utils";
+import {
+  formatINR,
+  formatDate,
+  generateWhatsAppReminderMessage,
+  getDaysOverdue,
+} from "@/lib/utils";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { InvoiceStatus, PaymentMode } from "@/types/database";
 import { toast } from "sonner";
@@ -26,11 +31,15 @@ import { toast } from "sonner";
 export default function SalesPage() {
   const { language, sales, customers, settings, recordPayment } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | InvoiceStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | InvoiceStatus>(
+    "all",
+  );
 
   // Payment modal state
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
-  const [selectedSale, setSelectedSale] = useState<typeof sales[0] | null>(null);
+  const [selectedSale, setSelectedSale] = useState<(typeof sales)[0] | null>(
+    null,
+  );
   const [payAmount, setPayAmount] = useState<number>(0);
   const [payMode, setPayMode] = useState<PaymentMode>("cash");
   const [payRef, setPayRef] = useState<string>("");
@@ -39,7 +48,8 @@ export default function SalesPage() {
   const filteredSales = sales.filter((s) => {
     const matchesSearch =
       s.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.customer_name && s.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (s.customer_name &&
+        s.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (s.customer_phone && s.customer_phone.includes(searchQuery));
 
     let matchesStatus = true;
@@ -47,7 +57,9 @@ export default function SalesPage() {
       if (statusFilter === "overdue") {
         matchesStatus =
           s.payment_status === "overdue" ||
-          (new Date(s.due_date) < new Date() && s.outstanding_balance > 0 && s.payment_status !== "cancelled");
+          (new Date(s.due_date) < new Date() &&
+            s.outstanding_balance > 0 &&
+            s.payment_status !== "cancelled");
       } else {
         matchesStatus = s.payment_status === statusFilter;
       }
@@ -56,12 +68,22 @@ export default function SalesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalBilled = sales.reduce((sum, s) => sum + (s.payment_status !== "cancelled" ? s.grand_total : 0), 0);
-  const totalPaid = sales.reduce((sum, s) => sum + (s.payment_status !== "cancelled" ? s.amount_paid : 0), 0);
-  const totalOutstanding = sales.reduce((sum, s) => sum + (s.payment_status !== "cancelled" ? s.outstanding_balance : 0), 0);
+  const totalBilled = sales.reduce(
+    (sum, s) => sum + (s.payment_status !== "cancelled" ? s.grand_total : 0),
+    0,
+  );
+  const totalPaid = sales.reduce(
+    (sum, s) => sum + (s.payment_status !== "cancelled" ? s.amount_paid : 0),
+    0,
+  );
+  const totalOutstanding = sales.reduce(
+    (sum, s) =>
+      sum + (s.payment_status !== "cancelled" ? s.outstanding_balance : 0),
+    0,
+  );
 
   // Open Payment Modal
-  const handleOpenPayment = (sale: typeof sales[0]) => {
+  const handleOpenPayment = (sale: (typeof sales)[0]) => {
     setSelectedSale(sale);
     setPayAmount(sale.outstanding_balance);
     setPayMode("cash");
@@ -86,13 +108,15 @@ export default function SalesPage() {
       notes: payNotes,
     });
 
-    toast.success(`पावती यशस्वीरीत्या जमा झाली! ₹${payAmount.toLocaleString("en-IN")}`);
+    toast.success(
+      `पावती यशस्वीरीत्या जमा झाली! ₹${payAmount.toLocaleString("en-IN")}`,
+    );
     setIsPayModalOpen(false);
     setSelectedSale(null);
   };
 
   // WhatsApp Share Invoice
-  const handleShareWhatsApp = (sale: typeof sales[0]) => {
+  const handleShareWhatsApp = (sale: (typeof sales)[0]) => {
     const cust = customers.find((c) => c.id === sale.customer_id);
     const phone = sale.customer_phone || cust?.mobile_number;
     if (!phone) {
@@ -116,8 +140,12 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
 📞 फोन: ${settings.contact_number}`;
 
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, "_blank");
+    const formattedPhone =
+      cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    window.open(
+      `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
     toast.success("व्हॉट्सअ‍ॅप विंडो उघडली आहे!");
   };
 
@@ -127,7 +155,11 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <span>{language === "mr" ? "विक्री व GST बिलिंग व्यवस्थापन" : "Sales & GST Invoices"}</span>
+            <span>
+              {language === "mr"
+                ? "विक्री व GST बिलिंग व्यवस्थापन"
+                : "Sales & GST Invoices"}
+            </span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
               {sales.length} बिले
             </span>
@@ -151,16 +183,28 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
       {/* Financial Summary Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-medium">एकूण विक्री (Total Billed)</span>
-          <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(totalBilled)}</p>
+          <span className="text-xs text-slate-500 font-medium">
+            एकूण विक्री (Total Billed)
+          </span>
+          <p className="text-xl font-bold text-slate-900 mt-1">
+            {formatINR(totalBilled)}
+          </p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-medium">जमा झालेली रक्कम (Received)</span>
-          <p className="text-xl font-bold text-emerald-600 mt-1">{formatINR(totalPaid)}</p>
+          <span className="text-xs text-slate-500 font-medium">
+            जमा झालेली रक्कम (Received)
+          </span>
+          <p className="text-xl font-bold text-emerald-600 mt-1">
+            {formatINR(totalPaid)}
+          </p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-amber-200 shadow-sm">
-          <span className="text-xs text-amber-700 font-medium">शिल्लक बाकी (Balance Outstanding)</span>
-          <p className="text-xl font-bold text-amber-600 mt-1">{formatINR(totalOutstanding)}</p>
+          <span className="text-xs text-amber-700 font-medium">
+            शिल्लक बाकी (Balance Outstanding)
+          </span>
+          <p className="text-xl font-bold text-amber-600 mt-1">
+            {formatINR(totalOutstanding)}
+          </p>
         </div>
       </div>
 
@@ -182,7 +226,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <button
             onClick={() => setStatusFilter("all")}
             className={`px-2.5 py-1.5 rounded-md transition-all ${
-              statusFilter === "all" ? "bg-white text-slate-900 shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              statusFilter === "all"
+                ? "bg-white text-slate-900 shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             सर्व बिले ({sales.length})
@@ -190,7 +236,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <button
             onClick={() => setStatusFilter("paid")}
             className={`px-2.5 py-1.5 rounded-md transition-all ${
-              statusFilter === "paid" ? "bg-emerald-600 text-white shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              statusFilter === "paid"
+                ? "bg-emerald-600 text-white shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             पूर्ण भरले
@@ -198,7 +246,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <button
             onClick={() => setStatusFilter("partially_paid")}
             className={`px-2.5 py-1.5 rounded-md transition-all ${
-              statusFilter === "partially_paid" ? "bg-amber-600 text-white shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              statusFilter === "partially_paid"
+                ? "bg-amber-600 text-white shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             काही भरले
@@ -206,7 +256,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <button
             onClick={() => setStatusFilter("pending")}
             className={`px-2.5 py-1.5 rounded-md transition-all ${
-              statusFilter === "pending" ? "bg-slate-700 text-white shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              statusFilter === "pending"
+                ? "bg-slate-700 text-white shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             बाकी
@@ -214,7 +266,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <button
             onClick={() => setStatusFilter("overdue")}
             className={`px-2.5 py-1.5 rounded-md transition-all ${
-              statusFilter === "overdue" ? "bg-rose-600 text-white shadow-sm font-semibold" : "text-slate-600 hover:text-slate-900"
+              statusFilter === "overdue"
+                ? "bg-rose-600 text-white shadow-sm font-semibold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             मुदत संपली
@@ -243,7 +297,10 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
             <tbody className="divide-y divide-slate-100">
               {filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-slate-500">
+                  <td
+                    colSpan={10}
+                    className="px-4 py-8 text-center text-slate-500"
+                  >
                     कोणतेही बिल सापडले नाही.
                   </td>
                 </tr>
@@ -251,23 +308,36 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
                 filteredSales.map((sale) => {
                   const isOverdue =
                     sale.payment_status === "overdue" ||
-                    (new Date(sale.due_date) < new Date() && sale.outstanding_balance > 0);
+                    (new Date(sale.due_date) < new Date() &&
+                      sale.outstanding_balance > 0);
                   const days = getDaysOverdue(sale.due_date);
 
                   return (
-                    <tr key={sale.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr
+                      key={sale.id}
+                      className="hover:bg-slate-50/80 transition-colors"
+                    >
                       <td className="px-4 py-3 font-bold text-sky-600">
-                        <Link href={`/sales/${sale.id}`}>{sale.invoice_number}</Link>
+                        <Link href={`/sales/${sale.id}`}>
+                          {sale.invoice_number}
+                        </Link>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{formatDate(sale.invoice_date)}</td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {formatDate(sale.invoice_date)}
+                      </td>
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900">{sale.customer_name}</p>
+                        <p className="font-semibold text-slate-900">
+                          {sale.customer_name}
+                        </p>
                         <p className="text-[11px] text-slate-400">
-                          {sale.customer_village || "सोलापूर"} • {sale.customer_phone || ""}
+                          {sale.customer_village || "सोलापूर"} •{" "}
+                          {sale.customer_phone || ""}
                         </p>
                       </td>
                       <td className="px-4 py-3 text-slate-600 max-w-xs truncate">
-                        {sale.items.map((i) => `${i.product_name} (${i.quantity} नग)`).join(", ")}
+                        {sale.items
+                          .map((i) => `${i.product_name} (${i.quantity} नग)`)
+                          .join(", ")}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-slate-900">
                         {formatINR(sale.grand_total)}
@@ -276,12 +346,16 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
                         {formatINR(sale.amount_paid)}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-rose-600">
-                        {sale.outstanding_balance > 0 ? formatINR(sale.outstanding_balance) : "-"}
+                        {sale.outstanding_balance > 0
+                          ? formatINR(sale.outstanding_balance)
+                          : "-"}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
                         <p>{formatDate(sale.due_date)}</p>
                         {isOverdue && sale.outstanding_balance > 0 && (
-                          <span className="text-[10px] text-rose-600 font-bold">({days} दिवस संपले)</span>
+                          <span className="text-[10px] text-rose-600 font-bold">
+                            ({days} दिवस संपले)
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -290,24 +364,33 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
                             sale.payment_status === "paid"
                               ? "bg-emerald-100 text-emerald-800"
                               : isOverdue
-                              ? "bg-rose-100 text-rose-800 animate-pulse"
-                              : sale.payment_status === "partially_paid"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-800"
+                                ? "bg-rose-100 text-rose-800 animate-pulse"
+                                : sale.payment_status === "partially_paid"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-800"
                           }`}
                         >
                           {sale.payment_status === "paid"
                             ? "पूर्ण भरले"
                             : isOverdue
-                            ? "मुदत संपली"
-                            : sale.payment_status === "partially_paid"
-                            ? "काही भरले"
-                            : "बाकी"}
+                              ? "मुदत संपली"
+                              : sale.payment_status === "partially_paid"
+                                ? "काही भरले"
+                                : "बाकी"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
                         <button
-                          onClick={() => void generateInvoicePDF(sale, settings, customers.find((customer) => customer.id === sale.customer_id), language)}
+                          onClick={() =>
+                            void generateInvoicePDF(
+                              sale,
+                              settings,
+                              customers.find(
+                                (customer) => customer.id === sale.customer_id,
+                              ),
+                              language,
+                            )
+                          }
                           className="p-1 rounded text-slate-500 hover:text-sky-600 hover:bg-slate-100 transition-colors"
                           title="Download Tax Invoice PDF"
                         >
@@ -352,7 +435,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">पेमेंट जमा नोंदवा</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  पेमेंट जमा नोंदवा
+                </h3>
                 <p className="text-xs text-slate-500">
                   {selectedSale.invoice_number} • {selectedSale.customer_name}
                 </p>
@@ -367,7 +452,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
 
             <form onSubmit={handleSavePayment} className="mt-4 space-y-3.5">
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between">
-                <span className="text-xs text-amber-800 font-semibold">शिल्लक बाकी रक्कम:</span>
+                <span className="text-xs text-amber-800 font-semibold">
+                  शिल्लक बाकी रक्कम:
+                </span>
                 <span className="text-base font-bold text-rose-600">
                   {formatINR(selectedSale.outstanding_balance)}
                 </span>
@@ -398,8 +485,12 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
                 >
                   <option value="cash">रोख (Cash)</option>
-                  <option value="upi">UPI (PhonePe / Google Pay / Paytm)</option>
-                  <option value="bank_transfer">बँक ट्रान्सफर (NEFT / RTGS / IMPS)</option>
+                  <option value="upi">
+                    UPI (PhonePe / Google Pay / Paytm)
+                  </option>
+                  <option value="bank_transfer">
+                    बँक ट्रान्सफर (NEFT / RTGS / IMPS)
+                  </option>
                   <option value="cheque">धनादेश (Cheque)</option>
                 </select>
               </div>
@@ -418,7 +509,9 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">नोंद (Notes)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  नोंद (Notes)
+                </label>
                 <input
                   type="text"
                   value={payNotes}
@@ -449,4 +542,3 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
     </div>
   );
 }
-
