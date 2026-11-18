@@ -55,12 +55,16 @@ interface StoreContextType {
   setLanguage: (lang: "mr" | "en") => void;
 
   // Actions - Customers
-  addCustomer: (customer: Omit<Customer, "id" | "created_at" | "updated_at">) => Customer;
+  addCustomer: (
+    customer: Omit<Customer, "id" | "created_at" | "updated_at">,
+  ) => Customer;
   updateCustomer: (id: string, customer: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
 
   // Actions - Products & Stock
-  addProduct: (product: Omit<Product, "id" | "created_at" | "updated_at">) => Product;
+  addProduct: (
+    product: Omit<Product, "id" | "created_at" | "updated_at">,
+  ) => Product;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   adjustStock: (
@@ -68,22 +72,33 @@ interface StoreContextType {
     quantityDelta: number,
     movementType: StockMovementType,
     reason: string,
-    referenceNumber?: string
+    referenceNumber?: string,
   ) => void;
 
   // Actions - Sales & Billing
   createSale: (
     saleData: Omit<Sale, "id" | "invoice_number" | "created_at" | "updated_at">,
-    initialPayment?: { amount: number; paymentMode: PaymentMode; transactionRef?: string }
+    initialPayment?: {
+      amount: number;
+      paymentMode: PaymentMode;
+      transactionRef?: string;
+    },
   ) => Sale;
   updateSaleStatus: (saleId: string, status: Sale["payment_status"]) => void;
 
   // Actions - Quotations
   createQuotation: (
-    quoteData: Omit<Quotation, "id" | "quotation_number" | "created_at" | "updated_at">
+    quoteData: Omit<
+      Quotation,
+      "id" | "quotation_number" | "created_at" | "updated_at"
+    >,
   ) => Quotation;
   updateQuotationStatus: (id: string, status: Quotation["status"]) => void;
-  convertQuotationToSale: (quotationId: string, paymentMode?: PaymentMode, amountPaid?: number) => Sale | null;
+  convertQuotationToSale: (
+    quotationId: string,
+    paymentMode?: PaymentMode,
+    amountPaid?: number,
+  ) => Sale | null;
 
   // Actions - Payments
   recordPayment: (paymentData: {
@@ -99,7 +114,9 @@ interface StoreContextType {
   }) => Payment;
 
   // Actions - Suppliers
-  addSupplier: (supplier: Omit<Supplier, "id" | "created_at" | "updated_at">) => Supplier;
+  addSupplier: (
+    supplier: Omit<Supplier, "id" | "created_at" | "updated_at">,
+  ) => Supplier;
   updateSupplier: (id: string, supplier: Partial<Supplier>) => void;
 
   // Actions - Settings
@@ -113,9 +130,14 @@ const StoreContext = createContext<StoreContextType | null>(null);
 
 const STORAGE_KEY = "pumpflow_state_v1";
 
-export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<BusinessSettings>(initialBusinessSettings);
-  const [categories, setCategories] = useState<ProductCategory[]>(initialCategories);
+export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [settings, setSettings] = useState<BusinessSettings>(
+    initialBusinessSettings,
+  );
+  const [categories, setCategories] =
+    useState<ProductCategory[]>(initialCategories);
   const [brands, setBrands] = useState<Brand[]>(initialBrands);
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
@@ -123,8 +145,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sales, setSales] = useState<Sale[]>(initialSales);
   const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
-  const [movements, setMovements] = useState<InventoryMovement[]>(initialInventoryMovements);
-  const [ledger, setLedger] = useState<CustomerLedgerEntry[]>(initialCustomerLedger);
+  const [movements, setMovements] = useState<InventoryMovement[]>(
+    initialInventoryMovements,
+  );
+  const [ledger, setLedger] = useState<CustomerLedgerEntry[]>(
+    initialCustomerLedger,
+  );
   const [language, setLanguage] = useState<"mr" | "en">("mr");
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -136,7 +162,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Customers CRUD
-  const addCustomer = (customerData: Omit<Customer, "id" | "created_at" | "updated_at">): Customer => {
+  const addCustomer = (
+    customerData: Omit<Customer, "id" | "created_at" | "updated_at">,
+  ): Customer => {
     const newCustomer: Customer = {
       ...customerData,
       id: crypto.randomUUID(),
@@ -146,27 +174,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomers((prev) => [newCustomer, ...prev]);
 
     if (supabase) {
-      void supabase.from("customers").insert({
-        id: newCustomer.id,
-        customer_name: newCustomer.customer_name,
-        mobile_number: newCustomer.mobile_number,
-        whatsapp_number: newCustomer.whatsapp_number,
-        email: newCustomer.email,
-        address: newCustomer.address,
-        village_city: newCustomer.village_city,
-        taluka: newCustomer.taluka,
-        district: newCustomer.district,
-        state: newCustomer.state,
-        gstin: newCustomer.gstin,
-        customer_type: newCustomer.customer_type,
-        credit_limit: newCustomer.credit_limit,
-        opening_balance: newCustomer.opening_balance,
-        current_outstanding: newCustomer.current_outstanding,
-        reminder_opt_out: newCustomer.reminder_opt_out,
-        notes: newCustomer.notes,
-      }).then(({ error }) => {
-        if (error) console.error("Supabase customer insert failed:", error);
-      });
+      void supabase
+        .from("customers")
+        .insert({
+          id: newCustomer.id,
+          customer_name: newCustomer.customer_name,
+          mobile_number: newCustomer.mobile_number,
+          whatsapp_number: newCustomer.whatsapp_number,
+          email: newCustomer.email,
+          address: newCustomer.address,
+          village_city: newCustomer.village_city,
+          taluka: newCustomer.taluka,
+          district: newCustomer.district,
+          state: newCustomer.state,
+          gstin: newCustomer.gstin,
+          customer_type: newCustomer.customer_type,
+          credit_limit: newCustomer.credit_limit,
+          opening_balance: newCustomer.opening_balance,
+          current_outstanding: newCustomer.current_outstanding,
+          reminder_opt_out: newCustomer.reminder_opt_out,
+          notes: newCustomer.notes,
+        })
+        .then(({ error }) => {
+          if (error) console.error("Supabase customer insert failed:", error);
+        });
     }
 
     if (newCustomer.opening_balance > 0) {
@@ -191,23 +222,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateCustomer = (id: string, customerData: Partial<Customer>) => {
     const updated_at = new Date().toISOString();
     setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...customerData, updated_at } : c))
+      prev.map((c) =>
+        c.id === id ? { ...c, ...customerData, updated_at } : c,
+      ),
     );
     if (supabase) {
       const dbData: Record<string, unknown> = { updated_at };
       const fieldMap: Record<string, string> = {
-        customer_name: "customer_name", mobile_number: "mobile_number", whatsapp_number: "whatsapp_number",
-        email: "email", address: "address", village_city: "village_city", taluka: "taluka",
-        district: "district", state: "state", gstin: "gstin", customer_type: "customer_type",
-        credit_limit: "credit_limit", opening_balance: "opening_balance",
-        current_outstanding: "current_outstanding", reminder_opt_out: "reminder_opt_out", notes: "notes",
+        customer_name: "customer_name",
+        mobile_number: "mobile_number",
+        whatsapp_number: "whatsapp_number",
+        email: "email",
+        address: "address",
+        village_city: "village_city",
+        taluka: "taluka",
+        district: "district",
+        state: "state",
+        gstin: "gstin",
+        customer_type: "customer_type",
+        credit_limit: "credit_limit",
+        opening_balance: "opening_balance",
+        current_outstanding: "current_outstanding",
+        reminder_opt_out: "reminder_opt_out",
+        notes: "notes",
       };
       Object.entries(customerData).forEach(([key, value]) => {
         if (fieldMap[key]) dbData[fieldMap[key]] = value;
       });
-      void supabase.from("customers").update(dbData).eq("id", id).then(({ error }) => {
-        if (error) console.error("Supabase customer update failed:", error);
-      });
+      void supabase
+        .from("customers")
+        .update(dbData)
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("Supabase customer update failed:", error);
+        });
     }
   };
 
@@ -217,7 +265,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Products CRUD
-  const addProduct = (productData: Omit<Product, "id" | "created_at" | "updated_at">): Product => {
+  const addProduct = (
+    productData: Omit<Product, "id" | "created_at" | "updated_at">,
+  ): Product => {
     const newProduct: Product = {
       ...productData,
       id: crypto.randomUUID(),
@@ -270,16 +320,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         created_at: new Date().toISOString(),
       };
       setMovements((prev) => [movement, ...prev]);
-      if (supabase) void supabase.from("inventory_movements").insert({
-        id: movement.id,
-        product_id: movement.product_id,
-        movement_type: movement.movement_type,
-        quantity: movement.quantity,
-        previous_stock: movement.previous_stock,
-        new_stock: movement.new_stock,
-        reference_number: movement.reference_number,
-        reason: movement.reason,
-      });
+      if (supabase)
+        void supabase.from("inventory_movements").insert({
+          id: movement.id,
+          product_id: movement.product_id,
+          movement_type: movement.movement_type,
+          quantity: movement.quantity,
+          previous_stock: movement.previous_stock,
+          new_stock: movement.new_stock,
+          reference_number: movement.reference_number,
+          reason: movement.reason,
+        });
     }
 
     return newProduct;
@@ -288,12 +339,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateProduct = (id: string, productData: Partial<Product>) => {
     const updated_at = new Date().toISOString();
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...productData, updated_at } : p))
+      prev.map((p) => (p.id === id ? { ...p, ...productData, updated_at } : p)),
     );
     if (supabase) {
       const dbData: Record<string, unknown> = { updated_at };
       Object.entries(productData).forEach(([key, value]) => {
-        if (!["id", "category_name", "brand_name", "serial_numbers", "created_at", "updated_at"].includes(key)) {
+        if (
+          ![
+            "id",
+            "category_name",
+            "brand_name",
+            "serial_numbers",
+            "created_at",
+            "updated_at",
+          ].includes(key)
+        ) {
           dbData[key] = value;
         }
       });
@@ -311,7 +371,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     quantityDelta: number,
     movementType: StockMovementType,
     reason: string,
-    referenceNumber?: string
+    referenceNumber?: string,
   ) => {
     setProducts((prev) =>
       prev.map((p) => {
@@ -335,7 +395,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setMovements((prevMov) => [movement, ...prevMov]);
 
           if (supabase) {
-            void supabase.from("products").update({ available_quantity: newStock, updated_at: updatedAt }).eq("id", p.id);
+            void supabase
+              .from("products")
+              .update({ available_quantity: newStock, updated_at: updatedAt })
+              .eq("id", p.id);
             void supabase.from("inventory_movements").insert({
               id: movement.id,
               product_id: movement.product_id,
@@ -350,14 +413,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return { ...p, available_quantity: newStock, updated_at: updatedAt };
         }
         return p;
-      })
+      }),
     );
   };
 
   // Sales & Billing
   const createSale = (
     saleData: Omit<Sale, "id" | "invoice_number" | "created_at" | "updated_at">,
-    initialPayment?: { amount: number; paymentMode: PaymentMode; transactionRef?: string }
+    initialPayment?: {
+      amount: number;
+      paymentMode: PaymentMode;
+      transactionRef?: string;
+    },
   ): Sale => {
     const invoiceSeq = 100 + sales.length + 1;
     const invoiceNumber = `${settings.invoice_prefix}${invoiceSeq}`;
@@ -375,7 +442,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Deduct stock for each sale item & log inventory movement
     newSale.items.forEach((item) => {
-      adjustStock(item.product_id, -item.quantity, "sale_out", `Sale ${invoiceNumber}`, invoiceNumber);
+      adjustStock(
+        item.product_id,
+        -item.quantity,
+        "sale_out",
+        `Sale ${invoiceNumber}`,
+        invoiceNumber,
+      );
     });
 
     // Update Customer outstanding
@@ -390,11 +463,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
         }
         return cust;
-      })
+      }),
     );
 
     // Add to Customer Ledger (Invoice Debit)
-    const matchingCustomer = customers.find((c) => c.id === newSale.customer_id);
+    const matchingCustomer = customers.find(
+      (c) => c.id === newSale.customer_id,
+    );
     const prevBalance = matchingCustomer?.current_outstanding || 0;
     const invoiceLedgerEntry: CustomerLedgerEntry = {
       id: crypto.randomUUID(),
@@ -479,33 +554,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (supabase) {
-      void supabase.from("sales").insert({
-        id: newSale.id,
-        invoice_number: newSale.invoice_number,
-        invoice_date: newSale.invoice_date,
-        due_date: newSale.due_date,
-        customer_id: newSale.customer_id,
-        quotation_id: newSale.quotation_id || null,
-        subtotal: newSale.subtotal,
-        item_discount_total: newSale.item_discount_total,
-        invoice_discount: newSale.invoice_discount,
-        taxable_amount: newSale.taxable_amount,
-        is_interstate: newSale.is_interstate,
-        cgst_amount: newSale.cgst_amount,
-        sgst_amount: newSale.sgst_amount,
-        igst_amount: newSale.igst_amount,
-        total_tax: newSale.total_tax,
-        round_off: newSale.round_off,
-        grand_total: newSale.grand_total,
-        amount_paid: newSale.amount_paid,
-        outstanding_balance: newSale.outstanding_balance,
-        payment_status: newSale.payment_status,
-        primary_payment_mode: newSale.primary_payment_mode,
-        notes: newSale.notes,
-        terms_conditions: newSale.terms_conditions,
-      }).then(({ error }) => {
-        if (error) console.error("Supabase invoice insert failed:", error);
-      });
+      void supabase
+        .from("sales")
+        .insert({
+          id: newSale.id,
+          invoice_number: newSale.invoice_number,
+          invoice_date: newSale.invoice_date,
+          due_date: newSale.due_date,
+          customer_id: newSale.customer_id,
+          quotation_id: newSale.quotation_id || null,
+          subtotal: newSale.subtotal,
+          item_discount_total: newSale.item_discount_total,
+          invoice_discount: newSale.invoice_discount,
+          taxable_amount: newSale.taxable_amount,
+          is_interstate: newSale.is_interstate,
+          cgst_amount: newSale.cgst_amount,
+          sgst_amount: newSale.sgst_amount,
+          igst_amount: newSale.igst_amount,
+          total_tax: newSale.total_tax,
+          round_off: newSale.round_off,
+          grand_total: newSale.grand_total,
+          amount_paid: newSale.amount_paid,
+          outstanding_balance: newSale.outstanding_balance,
+          payment_status: newSale.payment_status,
+          primary_payment_mode: newSale.primary_payment_mode,
+          notes: newSale.notes,
+          terms_conditions: newSale.terms_conditions,
+        })
+        .then(({ error }) => {
+          if (error) console.error("Supabase invoice insert failed:", error);
+        });
 
       void supabase.from("sale_items").insert(
         newSale.items.map((item) => {
@@ -531,7 +609,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             total_amount: item.total_amount,
             serial_numbers: item.serial_numbers || null,
           };
-        })
+        }),
       );
 
       void supabase.from("customer_ledger").insert({
@@ -547,10 +625,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         balance: invoiceLedgerEntry.balance,
       });
 
-      void supabase.from("customers").update({
-        current_outstanding: prevBalance + newSale.outstanding_balance,
-        updated_at: createdDate,
-      }).eq("id", newSale.customer_id);
+      void supabase
+        .from("customers")
+        .update({
+          current_outstanding: prevBalance + newSale.outstanding_balance,
+          updated_at: createdDate,
+        })
+        .eq("id", newSale.customer_id);
     }
 
     setSales((prev) => [newSale, ...prev]);
@@ -559,19 +640,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateSaleStatus = (saleId: string, status: Sale["payment_status"]) => {
     setSales((prev) =>
-      prev.map((s) => (s.id === saleId ? { ...s, payment_status: status, updated_at: new Date().toISOString() } : s))
+      prev.map((s) =>
+        s.id === saleId
+          ? {
+              ...s,
+              payment_status: status,
+              updated_at: new Date().toISOString(),
+            }
+          : s,
+      ),
     );
     if (supabase) {
-      void supabase.from("sales").update({
-        payment_status: status,
-        updated_at: new Date().toISOString(),
-      }).eq("id", saleId);
+      void supabase
+        .from("sales")
+        .update({
+          payment_status: status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", saleId);
     }
   };
 
   // Quotations
   const createQuotation = (
-    quoteData: Omit<Quotation, "id" | "quotation_number" | "created_at" | "updated_at">
+    quoteData: Omit<
+      Quotation,
+      "id" | "quotation_number" | "created_at" | "updated_at"
+    >,
   ): Quotation => {
     const quoteSeq = 40 + quotations.length + 1;
     const quotationNumber = `${settings.quotation_prefix}${quoteSeq}`;
@@ -602,18 +697,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         notes: newQuote.notes,
         terms_conditions: newQuote.terms_conditions,
       });
-      void supabase.from("quotation_items").insert(newQuote.items.map((item) => ({
-        id: crypto.randomUUID(),
-        quotation_id: newQuote.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount_amount: item.discount_amount,
-        gst_percentage: item.gst_percentage,
-        tax_amount: item.tax_amount,
-        total_amount: item.total_amount,
-      })));
+      void supabase.from("quotation_items").insert(
+        newQuote.items.map((item) => ({
+          id: crypto.randomUUID(),
+          quotation_id: newQuote.id,
+          product_id: item.product_id,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          discount_amount: item.discount_amount,
+          gst_percentage: item.gst_percentage,
+          tax_amount: item.tax_amount,
+          total_amount: item.total_amount,
+        })),
+      );
     }
     return newQuote;
   };
@@ -621,15 +718,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateQuotationStatus = (id: string, status: Quotation["status"]) => {
     const updated_at = new Date().toISOString();
     setQuotations((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, status, updated_at } : q))
+      prev.map((q) => (q.id === id ? { ...q, status, updated_at } : q)),
     );
-    if (supabase) void supabase.from("quotations").update({ status, updated_at }).eq("id", id);
+    if (supabase)
+      void supabase
+        .from("quotations")
+        .update({ status, updated_at })
+        .eq("id", id);
   };
 
   const convertQuotationToSale = (
     quotationId: string,
     paymentMode: PaymentMode = "credit",
-    amountPaid: number = 0
+    amountPaid: number = 0,
   ): Sale | null => {
     const quote = quotations.find((q) => q.id === quotationId);
     if (!quote) return null;
@@ -657,7 +758,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const outstanding = Math.max(0, quote.grand_total - amountPaid);
     const paymentStatus =
-      outstanding === 0 ? "paid" : amountPaid > 0 ? "partially_paid" : "pending";
+      outstanding === 0
+        ? "paid"
+        : amountPaid > 0
+          ? "partially_paid"
+          : "pending";
 
     const newSale = createSale(
       {
@@ -689,7 +794,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         terms_conditions: quote.terms_conditions || settings.invoice_terms,
         items: saleItems,
       },
-      amountPaid > 0 ? { amount: amountPaid, paymentMode } : undefined
+      amountPaid > 0 ? { amount: amountPaid, paymentMode } : undefined,
     );
 
     // Update quotation status to converted
@@ -726,8 +831,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           newBalance === 0
             ? "paid"
             : new Date(sale.due_date) < new Date()
-            ? "overdue"
-            : "partially_paid";
+              ? "overdue"
+              : "partially_paid";
 
         setSales((prev) =>
           prev.map((s) =>
@@ -739,16 +844,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   payment_status: newStatus,
                   updated_at: new Date().toISOString(),
                 }
-              : s
-          )
+              : s,
+          ),
         );
         if (supabase) {
-          void supabase.from("sales").update({
-            amount_paid: newPaid,
-            outstanding_balance: newBalance,
-            payment_status: newStatus,
-            updated_at: new Date().toISOString(),
-          }).eq("id", data.saleId);
+          void supabase
+            .from("sales")
+            .update({
+              amount_paid: newPaid,
+              outstanding_balance: newBalance,
+              payment_status: newStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", data.saleId);
         }
       }
     }
@@ -792,12 +900,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id === data.customerId) {
-          const currentOut = Math.max(0, (c.current_outstanding || 0) - data.amount);
+          const currentOut = Math.max(
+            0,
+            (c.current_outstanding || 0) - data.amount,
+          );
           if (supabase) {
-            void supabase.from("customers").update({
-              current_outstanding: currentOut,
-              updated_at: new Date().toISOString(),
-            }).eq("id", c.id);
+            void supabase
+              .from("customers")
+              .update({
+                current_outstanding: currentOut,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", c.id);
           }
           return {
             ...c,
@@ -806,7 +920,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
         }
         return c;
-      })
+      }),
     );
 
     // Ledger Credit Entry
@@ -846,7 +960,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Suppliers CRUD
-  const addSupplier = (supplierData: Omit<Supplier, "id" | "created_at" | "updated_at">): Supplier => {
+  const addSupplier = (
+    supplierData: Omit<Supplier, "id" | "created_at" | "updated_at">,
+  ): Supplier => {
     const newSupplier: Supplier = {
       ...supplierData,
       id: crypto.randomUUID(),
@@ -877,12 +993,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSupplier = (id: string, supplierData: Partial<Supplier>) => {
     const updated_at = new Date().toISOString();
     setSuppliers((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...supplierData, updated_at } : s))
+      prev.map((s) =>
+        s.id === id ? { ...s, ...supplierData, updated_at } : s,
+      ),
     );
     if (supabase) {
       const dbData: Record<string, unknown> = { updated_at };
       Object.entries(supplierData).forEach(([key, value]) => {
-        if (!["id", "created_at", "updated_at"].includes(key)) dbData[key] = value;
+        if (!["id", "created_at", "updated_at"].includes(key))
+          dbData[key] = value;
       });
       void supabase.from("suppliers").update(dbData).eq("id", id);
     }
@@ -897,9 +1016,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setSettings(updatedSettings);
     if (supabase) {
-      void supabase.from("business_settings").upsert(updatedSettings).then(({ error }) => {
-        if (error) console.error("Supabase settings update failed:", error);
-      });
+      void supabase
+        .from("business_settings")
+        .upsert(updatedSettings)
+        .then(({ error }) => {
+          if (error) console.error("Supabase settings update failed:", error);
+        });
     }
   };
 
@@ -923,92 +1045,153 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
-    const [settingsRes, categoriesRes, brandsRes, suppliersRes, customersRes, productsRes, movementsRes, salesRes, saleItemsRes, quotationsRes, quotationItemsRes, paymentsRes, ledgerRes] =
-      await Promise.all([
-        supabase.from("business_settings").select("*").limit(1).maybeSingle(),
-        supabase.from("product_categories").select("*").order("display_order"),
-        supabase.from("brands").select("*").order("name"),
-        supabase.from("suppliers").select("*"),
-        supabase.from("customers").select("*").order("created_at", { ascending: false }),
-        supabase.from("products").select("*").order("created_at", { ascending: false }),
-        supabase.from("inventory_movements").select("*").order("created_at", { ascending: false }),
-        supabase.from("sales").select("*").order("created_at", { ascending: false }),
-        supabase.from("sale_items").select("*"),
-        supabase.from("quotations").select("*").order("created_at", { ascending: false }),
-        supabase.from("quotation_items").select("*"),
-        supabase.from("payments").select("*").order("created_at", { ascending: false }),
-        supabase.from("customer_ledger").select("*").order("created_at", { ascending: true }),
-      ]);
+    const [
+      settingsRes,
+      categoriesRes,
+      brandsRes,
+      suppliersRes,
+      customersRes,
+      productsRes,
+      movementsRes,
+      salesRes,
+      saleItemsRes,
+      quotationsRes,
+      quotationItemsRes,
+      paymentsRes,
+      ledgerRes,
+    ] = await Promise.all([
+      supabase.from("business_settings").select("*").limit(1).maybeSingle(),
+      supabase.from("product_categories").select("*").order("display_order"),
+      supabase.from("brands").select("*").order("name"),
+      supabase.from("suppliers").select("*"),
+      supabase
+        .from("customers")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("inventory_movements")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("sales")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("sale_items").select("*"),
+      supabase
+        .from("quotations")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("quotation_items").select("*"),
+      supabase
+        .from("payments")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("customer_ledger")
+        .select("*")
+        .order("created_at", { ascending: true }),
+    ]);
 
-    if (settingsRes.data) setSettings(settingsRes.data as unknown as BusinessSettings);
+    if (settingsRes.data)
+      setSettings(settingsRes.data as unknown as BusinessSettings);
 
-    if (categoriesRes.data) setCategories(categoriesRes.data as unknown as ProductCategory[]);
+    if (categoriesRes.data)
+      setCategories(categoriesRes.data as unknown as ProductCategory[]);
     if (brandsRes.data) setBrands(brandsRes.data as unknown as Brand[]);
-    if (suppliersRes.data) setSuppliers(suppliersRes.data as unknown as Supplier[]);
+    if (suppliersRes.data)
+      setSuppliers(suppliersRes.data as unknown as Supplier[]);
 
     const dbCustomers = (customersRes.data || []) as unknown as Customer[];
     if (customersRes.data?.length) setCustomers(dbCustomers);
 
-    const dbCategories = (categoriesRes.data || []) as Array<{ id: string; name: string }>;
-    const dbBrands = (brandsRes.data || []) as Array<{ id: string; name: string }>;
+    const dbCategories = (categoriesRes.data || []) as Array<{
+      id: string;
+      name: string;
+    }>;
+    const dbBrands = (brandsRes.data || []) as Array<{
+      id: string;
+      name: string;
+    }>;
     const dbProducts = (productsRes.data || []) as unknown as Product[];
     if (productsRes.data?.length) {
-      setProducts(dbProducts.map((product) => ({
-        ...product,
-        category_name: dbCategories.find((item) => item.id === product.category_id)?.name,
-        brand_name: dbBrands.find((item) => item.id === product.brand_id)?.name,
-      })));
+      setProducts(
+        dbProducts.map((product) => ({
+          ...product,
+          category_name: dbCategories.find(
+            (item) => item.id === product.category_id,
+          )?.name,
+          brand_name: dbBrands.find((item) => item.id === product.brand_id)
+            ?.name,
+        })),
+      );
     }
 
-    const dbMovements = (movementsRes.data || []) as unknown as InventoryMovement[];
+    const dbMovements = (movementsRes.data ||
+      []) as unknown as InventoryMovement[];
     if (movementsRes.data?.length) setMovements(dbMovements);
 
-    const customerMap = new Map(dbCustomers.map((customer) => [customer.id, customer]));
+    const customerMap = new Map(
+      dbCustomers.map((customer) => [customer.id, customer]),
+    );
     const dbSales = (salesRes.data || []) as unknown as Sale[];
     const saleItems = (saleItemsRes.data || []) as unknown as SaleItem[];
     if (salesRes.data?.length) {
-      setSales(dbSales.map((sale) => {
-        const customer = customerMap.get(sale.customer_id);
-        return {
-          ...sale,
-          customer_name: customer?.customer_name,
-          customer_phone: customer?.mobile_number,
-          customer_village: customer?.village_city,
-          customer_gstin: customer?.gstin,
-          items: saleItems.filter((item) => item.sale_id === sale.id),
-        };
-      }));
+      setSales(
+        dbSales.map((sale) => {
+          const customer = customerMap.get(sale.customer_id);
+          return {
+            ...sale,
+            customer_name: customer?.customer_name,
+            customer_phone: customer?.mobile_number,
+            customer_village: customer?.village_city,
+            customer_gstin: customer?.gstin,
+            items: saleItems.filter((item) => item.sale_id === sale.id),
+          };
+        }),
+      );
     }
 
     const dbQuotations = (quotationsRes.data || []) as unknown as Quotation[];
-    const quotationItems = (quotationItemsRes.data || []) as unknown as QuotationItem[];
+    const quotationItems = (quotationItemsRes.data ||
+      []) as unknown as QuotationItem[];
     if (quotationsRes.data?.length) {
-      setQuotations(dbQuotations.map((quotation) => {
-        const customer = customerMap.get(quotation.customer_id);
-        return {
-          ...quotation,
-          customer_name: customer?.customer_name,
-          customer_phone: customer?.mobile_number,
-          customer_village: customer?.village_city,
-          items: quotationItems.filter((item) => item.quotation_id === quotation.id),
-        };
-      }));
+      setQuotations(
+        dbQuotations.map((quotation) => {
+          const customer = customerMap.get(quotation.customer_id);
+          return {
+            ...quotation,
+            customer_name: customer?.customer_name,
+            customer_phone: customer?.mobile_number,
+            customer_village: customer?.village_city,
+            items: quotationItems.filter(
+              (item) => item.quotation_id === quotation.id,
+            ),
+          };
+        }),
+      );
     }
 
     const dbPayments = (paymentsRes.data || []) as unknown as Payment[];
     if (paymentsRes.data?.length) {
-      setPayments(dbPayments.map((payment) => {
-        const customer = customerMap.get(payment.customer_id);
-        const sale = dbSales.find((item) => item.id === payment.sale_id);
-        return {
-          ...payment,
-          customer_name: customer?.customer_name,
-          invoice_number: sale?.invoice_number,
-        };
-      }));
+      setPayments(
+        dbPayments.map((payment) => {
+          const customer = customerMap.get(payment.customer_id);
+          const sale = dbSales.find((item) => item.id === payment.sale_id);
+          return {
+            ...payment,
+            customer_name: customer?.customer_name,
+            invoice_number: sale?.invoice_number,
+          };
+        }),
+      );
     }
 
-    if (ledgerRes.data) setLedger(ledgerRes.data as unknown as CustomerLedgerEntry[]);
+    if (ledgerRes.data)
+      setLedger(ledgerRes.data as unknown as CustomerLedgerEntry[]);
     setIsLoaded(true);
   };
 
@@ -1020,17 +1203,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const liveClient = supabase;
     const channel = liveClient.channel("pumpflow-live");
     const tables = [
-      "business_settings", "customers", "suppliers", "product_categories", "brands", "products",
-      "inventory_movements", "sales", "sale_items", "quotations", "quotation_items", "payments", "customer_ledger",
+      "business_settings",
+      "customers",
+      "suppliers",
+      "product_categories",
+      "brands",
+      "products",
+      "inventory_movements",
+      "sales",
+      "sale_items",
+      "quotations",
+      "quotation_items",
+      "payments",
+      "customer_ledger",
     ];
 
     tables.forEach((table) => {
-      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
-        window.clearTimeout((window as Window & { pumpflowRefreshTimer?: number }).pumpflowRefreshTimer);
-        (window as Window & { pumpflowRefreshTimer?: number }).pumpflowRefreshTimer = window.setTimeout(() => {
-          void refreshData();
-        }, 150);
-      });
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table },
+        () => {
+          window.clearTimeout(
+            (window as Window & { pumpflowRefreshTimer?: number })
+              .pumpflowRefreshTimer,
+          );
+          (
+            window as Window & { pumpflowRefreshTimer?: number }
+          ).pumpflowRefreshTimer = window.setTimeout(() => {
+            void refreshData();
+          }, 150);
+        },
+      );
     });
 
     void channel.subscribe();
@@ -1088,4 +1291,3 @@ export const useStore = () => {
   }
   return context;
 };
-
