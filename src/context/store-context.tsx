@@ -32,6 +32,7 @@ import {
   initialInventoryMovements,
   initialCustomerLedger,
 } from "@/lib/data/mock-initial-data";
+import { supabase } from "@/lib/supabase";
 
 interface StoreContextType {
   // Data
@@ -127,69 +128,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [language, setLanguage] = useState<"mr" | "en">("mr");
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Initialize from LocalStorage if present
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.settings) setSettings(parsed.settings);
-        if (parsed.categories) setCategories(parsed.categories);
-        if (parsed.brands) setBrands(parsed.brands);
-        if (parsed.suppliers) setSuppliers(parsed.suppliers);
-        if (parsed.customers) setCustomers(parsed.customers);
-        if (parsed.products) setProducts(parsed.products);
-        if (parsed.sales) setSales(parsed.sales);
-        if (parsed.quotations) setQuotations(parsed.quotations);
-        if (parsed.payments) setPayments(parsed.payments);
-        if (parsed.movements) setMovements(parsed.movements);
-        if (parsed.ledger) setLedger(parsed.ledger);
-        if (parsed.language) setLanguage(parsed.language);
-      }
-    } catch (e) {
-      console.error("Failed to load state from localStorage:", e);
-    } finally {
-      setIsLoaded(true);
-    }
-  }, []);
-
-  // Save to LocalStorage whenever state changes
-  useEffect(() => {
-    if (!isLoaded) return;
-    try {
-      const stateToPersist = {
-        settings,
-        categories,
-        brands,
-        suppliers,
-        customers,
-        products,
-        sales,
-        quotations,
-        payments,
-        movements,
-        ledger,
-        language,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToPersist));
-    } catch (e) {
-      console.error("Failed to save state to localStorage:", e);
-    }
-  }, [
-    settings,
-    categories,
-    brands,
-    suppliers,
-    customers,
-    products,
-    sales,
-    quotations,
-    payments,
-    movements,
-    ledger,
-    language,
-    isLoaded,
-  ]);
+  // Browser-local persistence has been replaced by Supabase.
+  // refreshData() loads shared data and subscribes to realtime changes.
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === "mr" ? "en" : "mr"));
@@ -199,16 +139,39 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addCustomer = (customerData: Omit<Customer, "id" | "created_at" | "updated_at">): Customer => {
     const newCustomer: Customer = {
       ...customerData,
-      id: "cust-" + Date.now(),
+      id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setCustomers((prev) => [newCustomer, ...prev]);
 
-    // If opening balance > 0, record in ledger
+    if (supabase) {
+      void supabase.from("customers").insert({
+        id: newCustomer.id,
+        customer_name: newCustomer.customer_name,
+        mobile_number: newCustomer.mobile_number,
+        whatsapp_number: newCustomer.whatsapp_number,
+        email: newCustomer.email,
+        address: newCustomer.address,
+        village_city: newCustomer.village_city,
+        taluka: newCustomer.taluka,
+        district: newCustomer.district,
+        state: newCustomer.state,
+        gstin: newCustomer.gstin,
+        customer_type: newCustomer.customer_type,
+        credit_limit: newCustomer.credit_limit,
+        opening_balance: newCustomer.opening_balance,
+        current_outstanding: newCustomer.current_outstanding,
+        reminder_opt_out: newCustomer.reminder_opt_out,
+        notes: newCustomer.notes,
+      }).then(({ error }) => {
+        if (error) console.error("Supabase customer insert failed:", error);
+      });
+    }
+
     if (newCustomer.opening_balance > 0) {
       const ledgerEntry: CustomerLedgerEntry = {
-        id: "led-" + Date.now(),
+        id: crypto.randomUUID(),
         customer_id: newCustomer.id,
         entry_date: new Date().toISOString().split("T")[0],
         entry_type: "opening_balance",
@@ -219,35 +182,83 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         created_at: new Date().toISOString(),
       };
       setLedger((prev) => [...prev, ledgerEntry]);
+      if (supabase) void supabase.from("customer_ledger").insert(ledgerEntry);
     }
 
     return newCustomer;
   };
 
   const updateCustomer = (id: string, customerData: Partial<Customer>) => {
+    const updated_at = new Date().toISOString();
     setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...customerData, updated_at: new Date().toISOString() } : c))
+      prev.map((c) => (c.id === id ? { ...c, ...customerData, updated_at } : c))
     );
+    if (supabase) {
+      const dbData: Record<string, unknown> = { updated_at };
+      const fieldMap: Record<string, string> = {
+        customer_name: "customer_name", mobile_number: "mobile_number", whatsapp_number: "whatsapp_number",
+        email: "email", address: "address", village_city: "village_city", taluka: "taluka",
+        district: "district", state: "state", gstin: "gstin", customer_type: "customer_type",
+        credit_limit: "credit_limit", opening_balance: "opening_balance",
+        current_outstanding: "current_outstanding", reminder_opt_out: "reminder_opt_out", notes: "notes",
+      };
+      Object.entries(customerData).forEach(([key, value]) => {
+        if (fieldMap[key]) dbData[fieldMap[key]] = value;
+      });
+      void supabase.from("customers").update(dbData).eq("id", id).then(({ error }) => {
+        if (error) console.error("Supabase customer update failed:", error);
+      });
+    }
   };
 
   const deleteCustomer = (id: string) => {
     setCustomers((prev) => prev.filter((c) => c.id !== id));
+    if (supabase) void supabase.from("customers").delete().eq("id", id);
   };
 
   // Products CRUD
   const addProduct = (productData: Omit<Product, "id" | "created_at" | "updated_at">): Product => {
     const newProduct: Product = {
       ...productData,
-      id: "prod-" + Date.now(),
+      id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setProducts((prev) => [newProduct, ...prev]);
 
-    // Record initial inventory movement if quantity > 0
+    if (supabase) {
+      void supabase.from("products").insert({
+        id: newProduct.id,
+        product_name: newProduct.product_name,
+        category_id: newProduct.category_id,
+        brand_id: newProduct.brand_id,
+        model_number: newProduct.model_number,
+        sku: newProduct.sku,
+        description: newProduct.description,
+        hp: newProduct.hp,
+        voltage: newProduct.voltage,
+        phase: newProduct.phase,
+        pump_type: newProduct.pump_type,
+        discharge_capacity: newProduct.discharge_capacity,
+        head_range: newProduct.head_range,
+        bore_size: newProduct.bore_size,
+        stages: newProduct.stages,
+        hsn_code: newProduct.hsn_code,
+        gst_percentage: newProduct.gst_percentage,
+        purchase_price: newProduct.purchase_price,
+        selling_price: newProduct.selling_price,
+        mrp: newProduct.mrp,
+        available_quantity: newProduct.available_quantity,
+        minimum_stock_quantity: newProduct.minimum_stock_quantity,
+        supplier_id: newProduct.supplier_id || null,
+        image_url: newProduct.image_url,
+        is_active: newProduct.is_active,
+      });
+    }
+
     if (newProduct.available_quantity > 0) {
       const movement: InventoryMovement = {
-        id: "mov-" + Date.now(),
+        id: crypto.randomUUID(),
         product_id: newProduct.id,
         product_name: newProduct.product_name,
         movement_type: "purchase_in",
@@ -259,19 +270,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         created_at: new Date().toISOString(),
       };
       setMovements((prev) => [movement, ...prev]);
+      if (supabase) void supabase.from("inventory_movements").insert({
+        id: movement.id,
+        product_id: movement.product_id,
+        movement_type: movement.movement_type,
+        quantity: movement.quantity,
+        previous_stock: movement.previous_stock,
+        new_stock: movement.new_stock,
+        reference_number: movement.reference_number,
+        reason: movement.reason,
+      });
     }
 
     return newProduct;
   };
 
   const updateProduct = (id: string, productData: Partial<Product>) => {
+    const updated_at = new Date().toISOString();
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...productData, updated_at: new Date().toISOString() } : p))
+      prev.map((p) => (p.id === id ? { ...p, ...productData, updated_at } : p))
     );
+    if (supabase) {
+      const dbData: Record<string, unknown> = { updated_at };
+      Object.entries(productData).forEach(([key, value]) => {
+        if (!["id", "category_name", "brand_name", "serial_numbers", "created_at", "updated_at"].includes(key)) {
+          dbData[key] = value;
+        }
+      });
+      void supabase.from("products").update(dbData).eq("id", id);
+    }
   };
 
   const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    if (supabase) void supabase.from("products").delete().eq("id", id);
   };
 
   const adjustStock = (
@@ -286,9 +318,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (p.id === productId) {
           const previousStock = p.available_quantity;
           const newStock = Math.max(0, previousStock + quantityDelta);
-
+          const updatedAt = new Date().toISOString();
           const movement: InventoryMovement = {
-            id: "mov-" + Date.now(),
+            id: crypto.randomUUID(),
             product_id: p.id,
             product_name: p.product_name,
             movement_type: movementType,
@@ -296,13 +328,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             previous_stock: previousStock,
             new_stock: newStock,
             reference_number: referenceNumber,
-            reason: reason,
+            reason,
             created_by_name: "Admin",
-            created_at: new Date().toISOString(),
+            created_at: updatedAt,
           };
           setMovements((prevMov) => [movement, ...prevMov]);
 
-          return { ...p, available_quantity: newStock, updated_at: new Date().toISOString() };
+          if (supabase) {
+            void supabase.from("products").update({ available_quantity: newStock, updated_at: updatedAt }).eq("id", p.id);
+            void supabase.from("inventory_movements").insert({
+              id: movement.id,
+              product_id: movement.product_id,
+              movement_type: movement.movement_type,
+              quantity: movement.quantity,
+              previous_stock: movement.previous_stock,
+              new_stock: movement.new_stock,
+              reference_number: movement.reference_number,
+              reason: movement.reason,
+            });
+          }
+          return { ...p, available_quantity: newStock, updated_at: updatedAt };
         }
         return p;
       })
@@ -317,7 +362,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const invoiceSeq = 100 + sales.length + 1;
     const invoiceNumber = `${settings.invoice_prefix}${invoiceSeq}`;
 
-    const newSaleId = "sale-" + Date.now();
+    const newSaleId = crypto.randomUUID();
     const createdDate = new Date().toISOString();
 
     const newSale: Sale = {
@@ -352,7 +397,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const matchingCustomer = customers.find((c) => c.id === newSale.customer_id);
     const prevBalance = matchingCustomer?.current_outstanding || 0;
     const invoiceLedgerEntry: CustomerLedgerEntry = {
-      id: "led-" + Date.now(),
+      id: crypto.randomUUID(),
       customer_id: newSale.customer_id,
       entry_date: newSale.invoice_date,
       entry_type: "invoice",
@@ -372,7 +417,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const receiptNumber = `${settings.receipt_prefix}${receiptSeq}`;
 
       const paymentRecord: Payment = {
-        id: "pay-" + Date.now(),
+        id: crypto.randomUUID(),
         receipt_number: receiptNumber,
         payment_date: newSale.invoice_date,
         customer_id: newSale.customer_id,
@@ -387,6 +432,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
 
       setPayments((prev) => [paymentRecord, ...prev]);
+
+      if (supabase) {
+        void supabase.from("payments").insert({
+          id: paymentRecord.id,
+          receipt_number: paymentRecord.receipt_number,
+          payment_date: paymentRecord.payment_date,
+          customer_id: paymentRecord.customer_id,
+          sale_id: paymentRecord.sale_id,
+          amount: paymentRecord.amount,
+          payment_mode: paymentRecord.payment_mode,
+          transaction_ref: paymentRecord.transaction_ref,
+          notes: paymentRecord.notes,
+        });
+      }
 
       // Add Payment Credit to Ledger
       const paymentLedgerEntry: CustomerLedgerEntry = {
@@ -403,6 +462,95 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         created_at: createdDate,
       };
       setLedger((prev) => [...prev, paymentLedgerEntry]);
+      if (supabase) {
+        void supabase.from("customer_ledger").insert({
+          id: paymentLedgerEntry.id,
+          customer_id: paymentLedgerEntry.customer_id,
+          entry_date: paymentLedgerEntry.entry_date,
+          entry_type: paymentLedgerEntry.entry_type,
+          reference_id: paymentLedgerEntry.reference_id,
+          reference_number: paymentLedgerEntry.reference_number,
+          description: paymentLedgerEntry.description,
+          debit: paymentLedgerEntry.debit,
+          credit: paymentLedgerEntry.credit,
+          balance: paymentLedgerEntry.balance,
+        });
+      }
+    }
+
+    if (supabase) {
+      void supabase.from("sales").insert({
+        id: newSale.id,
+        invoice_number: newSale.invoice_number,
+        invoice_date: newSale.invoice_date,
+        due_date: newSale.due_date,
+        customer_id: newSale.customer_id,
+        quotation_id: newSale.quotation_id || null,
+        subtotal: newSale.subtotal,
+        item_discount_total: newSale.item_discount_total,
+        invoice_discount: newSale.invoice_discount,
+        taxable_amount: newSale.taxable_amount,
+        is_interstate: newSale.is_interstate,
+        cgst_amount: newSale.cgst_amount,
+        sgst_amount: newSale.sgst_amount,
+        igst_amount: newSale.igst_amount,
+        total_tax: newSale.total_tax,
+        round_off: newSale.round_off,
+        grand_total: newSale.grand_total,
+        amount_paid: newSale.amount_paid,
+        outstanding_balance: newSale.outstanding_balance,
+        payment_status: newSale.payment_status,
+        primary_payment_mode: newSale.primary_payment_mode,
+        notes: newSale.notes,
+        terms_conditions: newSale.terms_conditions,
+      }).then(({ error }) => {
+        if (error) console.error("Supabase invoice insert failed:", error);
+      });
+
+      void supabase.from("sale_items").insert(
+        newSale.items.map((item) => {
+          return {
+            id: crypto.randomUUID(),
+            sale_id: newSale.id,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            hsn_code: item.hsn_code,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount_percent: item.discount_percent,
+            discount_amount: item.discount_amount,
+            taxable_amount: item.taxable_amount,
+            gst_percentage: item.gst_percentage,
+            cgst_rate: item.cgst_rate,
+            cgst_amount: item.cgst_amount,
+            sgst_rate: item.sgst_rate,
+            sgst_amount: item.sgst_amount,
+            igst_rate: item.igst_rate,
+            igst_amount: item.igst_amount,
+            total_tax: item.total_tax,
+            total_amount: item.total_amount,
+            serial_numbers: item.serial_numbers || null,
+          };
+        })
+      );
+
+      void supabase.from("customer_ledger").insert({
+        id: invoiceLedgerEntry.id,
+        customer_id: invoiceLedgerEntry.customer_id,
+        entry_date: invoiceLedgerEntry.entry_date,
+        entry_type: invoiceLedgerEntry.entry_type,
+        reference_id: invoiceLedgerEntry.reference_id,
+        reference_number: invoiceLedgerEntry.reference_number,
+        description: invoiceLedgerEntry.description,
+        debit: invoiceLedgerEntry.debit,
+        credit: invoiceLedgerEntry.credit,
+        balance: invoiceLedgerEntry.balance,
+      });
+
+      void supabase.from("customers").update({
+        current_outstanding: prevBalance + newSale.outstanding_balance,
+        updated_at: createdDate,
+      }).eq("id", newSale.customer_id);
     }
 
     setSales((prev) => [newSale, ...prev]);
@@ -413,6 +561,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSales((prev) =>
       prev.map((s) => (s.id === saleId ? { ...s, payment_status: status, updated_at: new Date().toISOString() } : s))
     );
+    if (supabase) {
+      void supabase.from("sales").update({
+        payment_status: status,
+        updated_at: new Date().toISOString(),
+      }).eq("id", saleId);
+    }
   };
 
   // Quotations
@@ -423,19 +577,53 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const quotationNumber = `${settings.quotation_prefix}${quoteSeq}`;
     const newQuote: Quotation = {
       ...quoteData,
-      id: "quo-" + Date.now(),
+      id: crypto.randomUUID(),
       quotation_number: quotationNumber,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setQuotations((prev) => [newQuote, ...prev]);
+
+    if (supabase) {
+      void supabase.from("quotations").insert({
+        id: newQuote.id,
+        quotation_number: newQuote.quotation_number,
+        quotation_date: newQuote.quotation_date,
+        expiry_date: newQuote.expiry_date,
+        customer_id: newQuote.customer_id,
+        status: newQuote.status,
+        subtotal: newQuote.subtotal,
+        discount_amount: newQuote.discount_amount,
+        taxable_amount: newQuote.taxable_amount,
+        total_tax: newQuote.total_tax,
+        grand_total: newQuote.grand_total,
+        converted_sale_id: newQuote.converted_sale_id || null,
+        converted_at: newQuote.converted_at || null,
+        notes: newQuote.notes,
+        terms_conditions: newQuote.terms_conditions,
+      });
+      void supabase.from("quotation_items").insert(newQuote.items.map((item) => ({
+        id: crypto.randomUUID(),
+        quotation_id: newQuote.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount_amount: item.discount_amount,
+        gst_percentage: item.gst_percentage,
+        tax_amount: item.tax_amount,
+        total_amount: item.total_amount,
+      })));
+    }
     return newQuote;
   };
 
   const updateQuotationStatus = (id: string, status: Quotation["status"]) => {
+    const updated_at = new Date().toISOString();
     setQuotations((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, status, updated_at: new Date().toISOString() } : q))
+      prev.map((q) => (q.id === id ? { ...q, status, updated_at } : q))
     );
+    if (supabase) void supabase.from("quotations").update({ status, updated_at }).eq("id", id);
   };
 
   const convertQuotationToSale = (
@@ -554,11 +742,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               : s
           )
         );
+        if (supabase) {
+          void supabase.from("sales").update({
+            amount_paid: newPaid,
+            outstanding_balance: newBalance,
+            payment_status: newStatus,
+            updated_at: new Date().toISOString(),
+          }).eq("id", data.saleId);
+        }
       }
     }
 
     const newPayment: Payment = {
-      id: "pay-" + Date.now(),
+      id: crypto.randomUUID(),
       receipt_number: receiptNumber,
       payment_date: pDate,
       customer_id: data.customerId,
@@ -576,11 +772,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setPayments((prev) => [newPayment, ...prev]);
 
+    if (supabase) {
+      void supabase.from("payments").insert({
+        id: newPayment.id,
+        receipt_number: newPayment.receipt_number,
+        payment_date: newPayment.payment_date,
+        customer_id: newPayment.customer_id,
+        sale_id: newPayment.sale_id || null,
+        amount: newPayment.amount,
+        payment_mode: newPayment.payment_mode,
+        transaction_ref: newPayment.transaction_ref,
+        cheque_bank: newPayment.cheque_bank,
+        cheque_date: newPayment.cheque_date,
+        notes: newPayment.notes,
+      });
+    }
+
     // Update Customer outstanding
     setCustomers((prev) =>
       prev.map((c) => {
         if (c.id === data.customerId) {
           const currentOut = Math.max(0, (c.current_outstanding || 0) - data.amount);
+          if (supabase) {
+            void supabase.from("customers").update({
+              current_outstanding: currentOut,
+              updated_at: new Date().toISOString(),
+            }).eq("id", c.id);
+          }
           return {
             ...c,
             current_outstanding: currentOut,
@@ -594,7 +812,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Ledger Credit Entry
     const currentCustomerBal = customer?.current_outstanding || 0;
     const paymentLedgerEntry: CustomerLedgerEntry = {
-      id: "led-" + Date.now(),
+      id: crypto.randomUUID(),
       customer_id: data.customerId,
       entry_date: pDate,
       entry_type: "payment",
@@ -609,6 +827,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       created_at: new Date().toISOString(),
     };
     setLedger((prev) => [...prev, paymentLedgerEntry]);
+    if (supabase) {
+      void supabase.from("customer_ledger").insert({
+        id: paymentLedgerEntry.id,
+        customer_id: paymentLedgerEntry.customer_id,
+        entry_date: paymentLedgerEntry.entry_date,
+        entry_type: paymentLedgerEntry.entry_type,
+        reference_id: paymentLedgerEntry.reference_id,
+        reference_number: paymentLedgerEntry.reference_number,
+        description: paymentLedgerEntry.description,
+        debit: paymentLedgerEntry.debit,
+        credit: paymentLedgerEntry.credit,
+        balance: paymentLedgerEntry.balance,
+      });
+    }
 
     return newPayment;
   };
@@ -617,27 +849,58 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addSupplier = (supplierData: Omit<Supplier, "id" | "created_at" | "updated_at">): Supplier => {
     const newSupplier: Supplier = {
       ...supplierData,
-      id: "sup-" + Date.now(),
+      id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     setSuppliers((prev) => [newSupplier, ...prev]);
+    if (supabase) {
+      void supabase.from("suppliers").insert({
+        id: newSupplier.id,
+        supplier_name: newSupplier.supplier_name,
+        contact_person: newSupplier.contact_person,
+        contact_number: newSupplier.contact_number,
+        whatsapp_number: newSupplier.whatsapp_number,
+        email: newSupplier.email,
+        address: newSupplier.address,
+        city: newSupplier.city,
+        state: newSupplier.state,
+        gstin: newSupplier.gstin,
+        opening_balance: newSupplier.opening_balance,
+        current_outstanding: newSupplier.current_outstanding,
+        notes: newSupplier.notes,
+      });
+    }
     return newSupplier;
   };
 
   const updateSupplier = (id: string, supplierData: Partial<Supplier>) => {
+    const updated_at = new Date().toISOString();
     setSuppliers((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...supplierData, updated_at: new Date().toISOString() } : s))
+      prev.map((s) => (s.id === id ? { ...s, ...supplierData, updated_at } : s))
     );
+    if (supabase) {
+      const dbData: Record<string, unknown> = { updated_at };
+      Object.entries(supplierData).forEach(([key, value]) => {
+        if (!["id", "created_at", "updated_at"].includes(key)) dbData[key] = value;
+      });
+      void supabase.from("suppliers").update(dbData).eq("id", id);
+    }
   };
 
   // Settings
   const updateSettings = (newSettings: Partial<BusinessSettings>) => {
-    setSettings((prev) => ({
-      ...prev,
+    const updatedSettings = {
+      ...settings,
       ...newSettings,
       updated_at: new Date().toISOString(),
-    }));
+    };
+    setSettings(updatedSettings);
+    if (supabase) {
+      void supabase.from("business_settings").upsert(updatedSettings).then(({ error }) => {
+        if (error) console.error("Supabase settings update failed:", error);
+      });
+    }
   };
 
   const resetToDefault = () => {
@@ -652,8 +915,129 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPayments(initialPayments);
     setMovements(initialInventoryMovements);
     setLedger(initialCustomerLedger);
-    localStorage.removeItem(STORAGE_KEY);
   };
+
+  const refreshData = async () => {
+    if (!supabase) {
+      setIsLoaded(true);
+      return;
+    }
+
+    const [settingsRes, categoriesRes, brandsRes, suppliersRes, customersRes, productsRes, movementsRes, salesRes, saleItemsRes, quotationsRes, quotationItemsRes, paymentsRes, ledgerRes] =
+      await Promise.all([
+        supabase.from("business_settings").select("*").limit(1).maybeSingle(),
+        supabase.from("product_categories").select("*").order("display_order"),
+        supabase.from("brands").select("*").order("name"),
+        supabase.from("suppliers").select("*"),
+        supabase.from("customers").select("*").order("created_at", { ascending: false }),
+        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        supabase.from("inventory_movements").select("*").order("created_at", { ascending: false }),
+        supabase.from("sales").select("*").order("created_at", { ascending: false }),
+        supabase.from("sale_items").select("*"),
+        supabase.from("quotations").select("*").order("created_at", { ascending: false }),
+        supabase.from("quotation_items").select("*"),
+        supabase.from("payments").select("*").order("created_at", { ascending: false }),
+        supabase.from("customer_ledger").select("*").order("created_at", { ascending: true }),
+      ]);
+
+    if (settingsRes.data) setSettings(settingsRes.data as unknown as BusinessSettings);
+
+    if (categoriesRes.data) setCategories(categoriesRes.data as unknown as ProductCategory[]);
+    if (brandsRes.data) setBrands(brandsRes.data as unknown as Brand[]);
+    if (suppliersRes.data) setSuppliers(suppliersRes.data as unknown as Supplier[]);
+
+    const dbCustomers = (customersRes.data || []) as unknown as Customer[];
+    if (customersRes.data?.length) setCustomers(dbCustomers);
+
+    const dbCategories = (categoriesRes.data || []) as Array<{ id: string; name: string }>;
+    const dbBrands = (brandsRes.data || []) as Array<{ id: string; name: string }>;
+    const dbProducts = (productsRes.data || []) as unknown as Product[];
+    if (productsRes.data?.length) {
+      setProducts(dbProducts.map((product) => ({
+        ...product,
+        category_name: dbCategories.find((item) => item.id === product.category_id)?.name,
+        brand_name: dbBrands.find((item) => item.id === product.brand_id)?.name,
+      })));
+    }
+
+    const dbMovements = (movementsRes.data || []) as unknown as InventoryMovement[];
+    if (movementsRes.data?.length) setMovements(dbMovements);
+
+    const customerMap = new Map(dbCustomers.map((customer) => [customer.id, customer]));
+    const dbSales = (salesRes.data || []) as unknown as Sale[];
+    const saleItems = (saleItemsRes.data || []) as unknown as SaleItem[];
+    if (salesRes.data?.length) {
+      setSales(dbSales.map((sale) => {
+        const customer = customerMap.get(sale.customer_id);
+        return {
+          ...sale,
+          customer_name: customer?.customer_name,
+          customer_phone: customer?.mobile_number,
+          customer_village: customer?.village_city,
+          customer_gstin: customer?.gstin,
+          items: saleItems.filter((item) => item.sale_id === sale.id),
+        };
+      }));
+    }
+
+    const dbQuotations = (quotationsRes.data || []) as unknown as Quotation[];
+    const quotationItems = (quotationItemsRes.data || []) as unknown as QuotationItem[];
+    if (quotationsRes.data?.length) {
+      setQuotations(dbQuotations.map((quotation) => {
+        const customer = customerMap.get(quotation.customer_id);
+        return {
+          ...quotation,
+          customer_name: customer?.customer_name,
+          customer_phone: customer?.mobile_number,
+          customer_village: customer?.village_city,
+          items: quotationItems.filter((item) => item.quotation_id === quotation.id),
+        };
+      }));
+    }
+
+    const dbPayments = (paymentsRes.data || []) as unknown as Payment[];
+    if (paymentsRes.data?.length) {
+      setPayments(dbPayments.map((payment) => {
+        const customer = customerMap.get(payment.customer_id);
+        const sale = dbSales.find((item) => item.id === payment.sale_id);
+        return {
+          ...payment,
+          customer_name: customer?.customer_name,
+          invoice_number: sale?.invoice_number,
+        };
+      }));
+    }
+
+    if (ledgerRes.data) setLedger(ledgerRes.data as unknown as CustomerLedgerEntry[]);
+    setIsLoaded(true);
+  };
+
+  useEffect(() => {
+    void refreshData();
+
+    if (!supabase) return;
+
+    const liveClient = supabase;
+    const channel = liveClient.channel("pumpflow-live");
+    const tables = [
+      "business_settings", "customers", "suppliers", "product_categories", "brands", "products",
+      "inventory_movements", "sales", "sale_items", "quotations", "quotation_items", "payments", "customer_ledger",
+    ];
+
+    tables.forEach((table) => {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
+        window.clearTimeout((window as Window & { pumpflowRefreshTimer?: number }).pumpflowRefreshTimer);
+        (window as Window & { pumpflowRefreshTimer?: number }).pumpflowRefreshTimer = window.setTimeout(() => {
+          void refreshData();
+        }, 150);
+      });
+    });
+
+    void channel.subscribe();
+    return () => {
+      void liveClient.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <StoreContext.Provider
