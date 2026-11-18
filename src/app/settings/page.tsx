@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Settings,
   Store,
@@ -18,22 +18,29 @@ import {
 import { useStore } from "@/context/store-context";
 import { BusinessSettings } from "@/types/database";
 import { toast } from "sonner";
+import { i18n } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { language, settings, updateSettings, resetToDefault } = useStore();
   const [activeTab, setActiveTab] = useState<"shop" | "bank" | "billing" | "whatsapp">("shop");
   const [formData, setFormData] = useState<BusinessSettings>(settings);
 
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
+
+  const t = i18n[language];
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings(formData);
-    toast.success("दुकान सेटिंग्ज यशस्वीरीत्या जतन केल्या!");
+    toast.success(t.settingsSaved);
   };
 
   const handleReset = () => {
-    if (confirm("तुम्हाला खात्री आहे का? सर्व डेटा पूर्वस्थितीत (Initial Mock Data) येईल.")) {
+    if (confirm(t.resetConfirm)) {
       resetToDefault();
-      toast.success("डेटा पूर्वस्थितीत रिसेट झाला.");
+      toast.success(t.resetSuccess);
     }
   };
 
@@ -43,12 +50,10 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <span>{language === "mr" ? "दुकान व बिलिंग सेटिंग्ज (Business Settings)" : "Business Settings"}</span>
+            <span>{t.businessSettings}</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {language === "mr"
-              ? "दुकान तपशील, बँक खाती, जीएसटी, बिल अटी व व्हॉट्सअ‍ॅप मेसेज टेम्प्लेट्स"
-              : "Configure shop address, GSTIN, bank details, invoice terms, and WhatsApp templates"}
+            {t.configureShopDetails}
           </p>
         </div>
 
@@ -59,7 +64,7 @@ export default function SettingsPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors"
           >
             <RotateCcw className="h-4 w-4 text-slate-500" />
-            <span>डेटा रिसेट</span>
+            <span>{t.resetData}</span>
           </button>
 
           <button
@@ -67,7 +72,7 @@ export default function SettingsPage() {
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-sm transition-colors"
           >
             <Save className="h-4 w-4" />
-            <span>बदल जतन करा</span>
+            <span>{t.saveChanges}</span>
           </button>
         </div>
       </div>
@@ -83,7 +88,7 @@ export default function SettingsPage() {
           }`}
         >
           <Store className="h-4 w-4" />
-          <span>दुकान माहिती (Shop Profile)</span>
+          <span>{t.shopProfile}</span>
         </button>
 
         <button
@@ -95,7 +100,7 @@ export default function SettingsPage() {
           }`}
         >
           <CreditCard className="h-4 w-4" />
-          <span>बँक व UPI खाती</span>
+          <span>{t.bankDetails}</span>
         </button>
 
         <button
@@ -107,7 +112,7 @@ export default function SettingsPage() {
           }`}
         >
           <FileText className="h-4 w-4" />
-          <span>बिलिंग व अटी (Invoice Terms)</span>
+          <span>{t.invoiceTerms}</span>
         </button>
 
         <button
@@ -119,7 +124,7 @@ export default function SettingsPage() {
           }`}
         >
           <MessageSquare className="h-4 w-4" />
-          <span>व्हॉट्सअ‍ॅप तगादा टेम्प्लेट</span>
+          <span>{t.whatsappTemplate}</span>
         </button>
       </div>
 
@@ -129,13 +134,13 @@ export default function SettingsPage() {
         {activeTab === "shop" && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              दुकान व संपर्क माहिती (Shop Details)
+              {t.shopDetails}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  दुकान / एजन्सीचे नाव *
+                  {t.shopName} *
                 </label>
                 <input
                   type="text"
@@ -148,7 +153,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  मालक / व्यवस्थापक नाव *
+                  {t.ownerManagerName} *
                 </label>
                 <input
                   type="text"
@@ -160,7 +165,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">टॅगलाईन (Tagline)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.tagline}</label>
                 <input
                   type="text"
                   value={formData.tagline}
@@ -170,7 +175,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">पत्ता (Address) *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.address} *</label>
                 <input
                   type="text"
                   required
@@ -181,7 +186,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">शहर / जिल्हा</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.cityDistrict}</label>
                 <input
                   type="text"
                   value={formData.city}
@@ -191,7 +196,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">पिनकोड</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.pincode}</label>
                 <input
                   type="text"
                   value={formData.pincode}
@@ -202,7 +207,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  दुकान फोन नंबर *
+                  {t.shopPhoneNumber} *
                 </label>
                 <input
                   type="text"
@@ -215,7 +220,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  व्हॉट्सअ‍ॅप नंबर *
+                  {t.whatsappNumber} *
                 </label>
                 <input
                   type="text"
@@ -227,7 +232,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">GSTIN नंबर *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.gstinNumber} *</label>
                 <input
                   type="text"
                   required
@@ -239,7 +244,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  राज्य कोड (State Code)
+                  {t.stateCode}
                 </label>
                 <input
                   type="text"
@@ -256,12 +261,12 @@ export default function SettingsPage() {
         {activeTab === "bank" && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              बँक खाते व UPI तपशील (बिल प्रिंटवर दिसतील)
+              {t.bankAccountUpiDetails}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">बँकेचे नाव *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.bankName} *</label>
                 <input
                   type="text"
                   value={formData.bank_name}
@@ -272,7 +277,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  खाते क्रमांक (Account No) *
+                  {t.accountNumber} ({t.required}) *
                 </label>
                 <input
                   type="text"
@@ -283,7 +288,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">IFSC कोड *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.ifscCode} *</label>
                 <input
                   type="text"
                   value={formData.bank_ifsc}
@@ -293,7 +298,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">शाखा (Branch)</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.branch}</label>
                 <input
                   type="text"
                   value={formData.bank_branch}
@@ -303,7 +308,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">UPI आयडी (VPA) *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">{t.upiId} *</label>
                 <input
                   type="text"
                   value={formData.upi_id}
@@ -320,13 +325,13 @@ export default function SettingsPage() {
         {activeTab === "billing" && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              बिलिंग प्रीफिक्स व हमी (Warranty) अटी
+              {t.billingPrefixWarranty}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  बिल क्रमांक प्रीफिक्स
+                  {t.invoiceNumberPrefix}
                 </label>
                 <input
                   type="text"
@@ -338,7 +343,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  कोटेशन प्रीफिक्स
+                  {t.quotationPrefix}
                 </label>
                 <input
                   type="text"
@@ -350,7 +355,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  डीफॉल्ट उधारी मुदत (दिवस)
+                  {t.defaultCreditDays}
                 </label>
                 <input
                   type="number"
@@ -362,7 +367,7 @@ export default function SettingsPage() {
 
               <div className="sm:col-span-3">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  बिलावरील अटी व शर्ती (Invoice Terms)
+                  {t.invoiceTerms}
                 </label>
                 <textarea
                   rows={4}
@@ -379,7 +384,7 @@ export default function SettingsPage() {
         {activeTab === "whatsapp" && (
           <div className="space-y-4 animate-in fade-in">
             <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              मराठी व्हॉट्सअ‍ॅप तगादा संदेश पूर्वावलोकन (Preview)
+              {t.whatsappTemplatePreview}
             </h3>
 
             <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-slate-800 font-mono whitespace-pre-line space-y-1">
@@ -410,7 +415,7 @@ export default function SettingsPage() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-md shadow-sky-600/30 transition-all active:scale-98"
           >
             <Save className="h-4 w-4" />
-            <span>सेटिंग्ज जतन करा (Save Settings)</span>
+            <span>{t.saveSettings}</span>
           </button>
         </div>
       </form>

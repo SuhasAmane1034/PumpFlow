@@ -19,11 +19,12 @@ import { formatINR, formatDate, getDaysOverdue } from "@/lib/utils";
 import { generateInvoicePDF } from "@/lib/pdf-generator";
 import { PaymentMode } from "@/types/database";
 import { toast } from "sonner";
+import { InvoiceDocument } from "@/components/invoice-document";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { sales, customers, settings, payments, recordPayment } = useStore();
+  const { sales, customers, settings, payments, recordPayment, language } = useStore();
 
   const saleId = params.id as string;
   const sale = sales.find((s) => s.id === saleId);
@@ -151,7 +152,7 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
           </button>
 
           <button
-            onClick={() => generateInvoicePDF(sale, settings, customer)}
+            onClick={() => void generateInvoicePDF(sale, settings, customer, language)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors"
           >
             <Download className="h-4 w-4 text-sky-600" />
@@ -178,200 +179,207 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
         </div>
       </div>
 
-      {/* Printable Invoice Paper Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-10 max-w-4xl mx-auto text-slate-800">
-        {/* Invoice Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-200">
-          <div>
-            <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-sky-100 text-sky-800">
-              TAX INVOICE / कर बीजक
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
-              {settings.shop_name}
-            </h2>
-            <p className="text-xs text-slate-600 mt-0.5">{settings.tagline}</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {settings.address}, {settings.city} - {settings.pincode}
-            </p>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              GSTIN: <strong>{settings.gstin}</strong> • राज्य कोड: {settings.state_code}
-            </p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              फोन: {settings.contact_number} | {settings.whatsapp_number}
-            </p>
+      {/* Shared printable and PDF invoice document */}
+      <div className="max-w-4xl mx-auto overflow-x-auto">
+        <InvoiceDocument sale={sale} settings={settings} customer={customer} language={language} />
+      </div>
+
+      <div className="hidden">
+        {/* Printable Invoice Paper Container */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-10 max-w-4xl mx-auto text-slate-800">
+          {/* Invoice Header */}
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-slate-200">
+            <div>
+              <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-sky-100 text-sky-800">
+                TAX INVOICE / कर बीजक
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+                {settings.shop_name}
+              </h2>
+              <p className="text-xs text-slate-600 mt-0.5">{settings.tagline}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {settings.address}, {settings.city} - {settings.pincode}
+              </p>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                GSTIN: <strong>{settings.gstin}</strong> • राज्य कोड: {settings.state_code}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                फोन: {settings.contact_number} | {settings.whatsapp_number}
+              </p>
+            </div>
+
+            <div className="text-left sm:text-right space-y-1 text-xs">
+              <p className="text-sm font-bold text-sky-700 font-mono">{sale.invoice_number}</p>
+              <p className="text-slate-600">
+                तारीख: <strong>{formatDate(sale.invoice_date)}</strong>
+              </p>
+              <p className="text-slate-600">
+                अंतिम मुदत: <strong>{formatDate(sale.due_date)}</strong>
+              </p>
+              <p className="text-slate-600">
+                पेमेंट पद्धत: <strong className="capitalize">{sale.primary_payment_mode}</strong>
+              </p>
+            </div>
           </div>
 
-          <div className="text-left sm:text-right space-y-1 text-xs">
-            <p className="text-sm font-bold text-sky-700 font-mono">{sale.invoice_number}</p>
-            <p className="text-slate-600">
-              तारीख: <strong>{formatDate(sale.invoice_date)}</strong>
-            </p>
-            <p className="text-slate-600">
-              अंतिम मुदत: <strong>{formatDate(sale.due_date)}</strong>
-            </p>
-            <p className="text-slate-600">
-              पेमेंट पद्धत: <strong className="capitalize">{sale.primary_payment_mode}</strong>
-            </p>
-          </div>
-        </div>
+          {/* Bill To Customer Section */}
+          <div className="py-5 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-200 text-xs">
+            <div>
+              <span className="text-[11px] font-bold uppercase text-slate-400">ग्राहक / खरेदीदार:</span>
+              <h3 className="text-sm font-bold text-slate-900 mt-1">{sale.customer_name}</h3>
+              <p className="text-slate-600 mt-0.5">
+                {customer?.address || sale.customer_village || "Solapur"}
+              </p>
+              <p className="text-slate-600 mt-0.5 font-mono">
+                मोबाईल: {sale.customer_phone || customer?.mobile_number || "-"}
+              </p>
+              <p className="text-slate-500 mt-0.5">
+                GSTIN: {sale.customer_gstin || customer?.gstin || "URP (अनोंदणीकृत)"}
+              </p>
+            </div>
 
-        {/* Bill To Customer Section */}
-        <div className="py-5 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-200 text-xs">
-          <div>
-            <span className="text-[11px] font-bold uppercase text-slate-400">ग्राहक / खरेदीदार:</span>
-            <h3 className="text-sm font-bold text-slate-900 mt-1">{sale.customer_name}</h3>
-            <p className="text-slate-600 mt-0.5">
-              {customer?.address || sale.customer_village || "Solapur"}
-            </p>
-            <p className="text-slate-600 mt-0.5 font-mono">
-              मोबाईल: {sale.customer_phone || customer?.mobile_number || "-"}
-            </p>
-            <p className="text-slate-500 mt-0.5">
-              GSTIN: {sale.customer_gstin || customer?.gstin || "URP (अनोंदणीकृत)"}
-            </p>
+            <div className="sm:text-right space-y-1">
+              <span className="text-[11px] font-bold uppercase text-slate-400">स्थिती व बाकी:</span>
+              <p className="text-sm font-bold text-slate-900 mt-1">
+                एकूण बिल: {formatINR(sale.grand_total)}
+              </p>
+              <p className="text-emerald-600 font-semibold">
+                जमा रक्कम: {formatINR(sale.amount_paid)}
+              </p>
+              <p className="text-rose-600 font-bold text-sm">
+                शिल्लक बाकी: {formatINR(sale.outstanding_balance)}
+              </p>
+            </div>
           </div>
 
-          <div className="sm:text-right space-y-1">
-            <span className="text-[11px] font-bold uppercase text-slate-400">स्थिती व बाकी:</span>
-            <p className="text-sm font-bold text-slate-900 mt-1">
-              एकूण बिल: {formatINR(sale.grand_total)}
-            </p>
-            <p className="text-emerald-600 font-semibold">
-              जमा रक्कम: {formatINR(sale.amount_paid)}
-            </p>
-            <p className="text-rose-600 font-bold text-sm">
-              शिल्लक बाकी: {formatINR(sale.outstanding_balance)}
-            </p>
-          </div>
-        </div>
-
-        {/* Items Table */}
-        <div className="py-6 overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-700 uppercase text-[10px] font-bold border-y border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3">#</th>
-                <th className="py-2.5 px-3">पंप / मालाचे वर्णन</th>
-                <th className="py-2.5 px-3 text-center">HSN</th>
-                <th className="py-2.5 px-3 text-center">नग (Qty)</th>
-                <th className="py-2.5 px-3 text-right">दर (Rate)</th>
-                <th className="py-2.5 px-3 text-right">सूट (Disc)</th>
-                <th className="py-2.5 px-3 text-right">करपात्र (Taxable)</th>
-                <th className="py-2.5 px-3 text-center">GST</th>
-                <th className="py-2.5 px-3 text-right">एकूण रक्कम</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {sale.items.map((item, idx) => (
-                <tr key={item.id}>
-                  <td className="py-3 px-3 text-slate-400">{idx + 1}</td>
-                  <td className="py-3 px-3">
-                    <p className="font-bold text-slate-900">{item.product_name}</p>
-                    {item.serial_numbers && item.serial_numbers.length > 0 && (
-                      <p className="text-[11px] text-sky-700 font-mono mt-0.5">
-                        सिरीयल नंबर: {item.serial_numbers.join(", ")}
-                      </p>
-                    )}
-                  </td>
-                  <td className="py-3 px-3 text-center font-mono text-slate-500">{item.hsn_code}</td>
-                  <td className="py-3 px-3 text-center font-bold text-slate-800">{item.quantity}</td>
-                  <td className="py-3 px-3 text-right font-medium">{formatINR(item.unit_price)}</td>
-                  <td className="py-3 px-3 text-right text-slate-500">
-                    {item.discount_amount > 0 ? formatINR(item.discount_amount) : "-"}
-                  </td>
-                  <td className="py-3 px-3 text-right font-medium text-slate-800">
-                    {formatINR(item.taxable_amount)}
-                  </td>
-                  <td className="py-3 px-3 text-center">{item.gst_percentage}%</td>
-                  <td className="py-3 px-3 text-right font-bold text-slate-900">
-                    {formatINR(item.total_amount)}
-                  </td>
+          {/* Items Table */}
+          <div className="py-6 overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 uppercase text-[10px] font-bold border-y border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3">#</th>
+                  <th className="py-2.5 px-3">पंप / मालाचे वर्णन</th>
+                  <th className="py-2.5 px-3 text-center">HSN</th>
+                  <th className="py-2.5 px-3 text-center">नग (Qty)</th>
+                  <th className="py-2.5 px-3 text-right">दर (Rate)</th>
+                  <th className="py-2.5 px-3 text-right">सूट (Disc)</th>
+                  <th className="py-2.5 px-3 text-right">करपात्र (Taxable)</th>
+                  <th className="py-2.5 px-3 text-center">GST</th>
+                  <th className="py-2.5 px-3 text-right">एकूण रक्कम</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Invoice Summary & Bank Details */}
-        <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-          {/* Bank & UPI Info */}
-          <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-            <p className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">
-              बँक व UPI पेमेंट तपशील
-            </p>
-            <p className="text-slate-600">
-              बँक नाव: <strong>{settings.bank_name}</strong>
-            </p>
-            <p className="text-slate-600">
-              खाते क्रमांक: <strong className="font-mono">{settings.bank_account_number}</strong>
-            </p>
-            <p className="text-slate-600">
-              IFSC कोड: <strong className="font-mono">{settings.bank_ifsc}</strong> ({settings.bank_branch})
-            </p>
-            <p className="text-slate-600">
-              UPI आयडी: <strong className="font-mono text-sky-700">{settings.upi_id}</strong>
-            </p>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sale.items.map((item, idx) => (
+                  <tr key={item.id}>
+                    <td className="py-3 px-3 text-slate-400">{idx + 1}</td>
+                    <td className="py-3 px-3">
+                      <p className="font-bold text-slate-900">{item.product_name}</p>
+                      {item.serial_numbers && item.serial_numbers.length > 0 && (
+                        <p className="text-[11px] text-sky-700 font-mono mt-0.5">
+                          सिरीयल नंबर: {item.serial_numbers.join(", ")}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono text-slate-500">{item.hsn_code}</td>
+                    <td className="py-3 px-3 text-center font-bold text-slate-800">{item.quantity}</td>
+                    <td className="py-3 px-3 text-right font-medium">{formatINR(item.unit_price)}</td>
+                    <td className="py-3 px-3 text-right text-slate-500">
+                      {item.discount_amount > 0 ? formatINR(item.discount_amount) : "-"}
+                    </td>
+                    <td className="py-3 px-3 text-right font-medium text-slate-800">
+                      {formatINR(item.taxable_amount)}
+                    </td>
+                    <td className="py-3 px-3 text-center">{item.gst_percentage}%</td>
+                    <td className="py-3 px-3 text-right font-bold text-slate-900">
+                      {formatINR(item.total_amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* Tax Breakdown */}
-          <div className="space-y-1.5 text-right">
-            <div className="flex justify-between text-slate-600">
-              <span>करपात्र रक्कम (Taxable):</span>
-              <span className="font-medium text-slate-800">{formatINR(sale.taxable_amount)}</span>
+          {/* Invoice Summary & Bank Details */}
+          <div className="pt-4 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+            {/* Bank & UPI Info */}
+            <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">
+                बँक व UPI पेमेंट तपशील
+              </p>
+              <p className="text-slate-600">
+                बँक नाव: <strong>{settings.bank_name}</strong>
+              </p>
+              <p className="text-slate-600">
+                खाते क्रमांक: <strong className="font-mono">{settings.bank_account_number}</strong>
+              </p>
+              <p className="text-slate-600">
+                IFSC कोड: <strong className="font-mono">{settings.bank_ifsc}</strong> ({settings.bank_branch})
+              </p>
+              <p className="text-slate-600">
+                UPI आयडी: <strong className="font-mono text-sky-700">{settings.upi_id}</strong>
+              </p>
             </div>
-            {sale.is_interstate ? (
+
+            {/* Tax Breakdown */}
+            <div className="space-y-1.5 text-right">
               <div className="flex justify-between text-slate-600">
-                <span>IGST (18%):</span>
-                <span className="font-medium text-slate-800">{formatINR(sale.igst_amount)}</span>
+                <span>करपात्र रक्कम (Taxable):</span>
+                <span className="font-medium text-slate-800">{formatINR(sale.taxable_amount)}</span>
               </div>
-            ) : (
-              <>
+              {sale.is_interstate ? (
                 <div className="flex justify-between text-slate-600">
-                  <span>CGST (9%):</span>
-                  <span className="font-medium text-slate-800">{formatINR(sale.cgst_amount)}</span>
+                  <span>IGST (18%):</span>
+                  <span className="font-medium text-slate-800">{formatINR(sale.igst_amount)}</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>SGST (9%):</span>
-                  <span className="font-medium text-slate-800">{formatINR(sale.sgst_amount)}</span>
+              ) : (
+                <>
+                  <div className="flex justify-between text-slate-600">
+                    <span>CGST (9%):</span>
+                    <span className="font-medium text-slate-800">{formatINR(sale.cgst_amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>SGST (9%):</span>
+                    <span className="font-medium text-slate-800">{formatINR(sale.sgst_amount)}</span>
+                  </div>
+                </>
+              )}
+              {sale.round_off !== 0 && (
+                <div className="flex justify-between text-slate-500 text-[11px]">
+                  <span>Round Off:</span>
+                  <span>{formatINR(sale.round_off)}</span>
                 </div>
-              </>
-            )}
-            {sale.round_off !== 0 && (
-              <div className="flex justify-between text-slate-500 text-[11px]">
-                <span>Round Off:</span>
-                <span>{formatINR(sale.round_off)}</span>
+              )}
+              <div className="pt-2 border-t border-slate-200 flex justify-between font-bold text-sm text-slate-900">
+                <span>एकूण बिल (Grand Total):</span>
+                <span className="text-base text-sky-700">{formatINR(sale.grand_total)}</span>
               </div>
-            )}
-            <div className="pt-2 border-t border-slate-200 flex justify-between font-bold text-sm text-slate-900">
-              <span>एकूण बिल (Grand Total):</span>
-              <span className="text-base text-sky-700">{formatINR(sale.grand_total)}</span>
-            </div>
-            <div className="flex justify-between text-emerald-600 font-semibold">
-              <span>जमा रक्कम (Paid):</span>
-              <span>{formatINR(sale.amount_paid)}</span>
-            </div>
-            <div className="flex justify-between text-rose-600 font-bold text-sm">
-              <span>बाकी येणे (Balance Due):</span>
-              <span>{formatINR(sale.outstanding_balance)}</span>
+              <div className="flex justify-between text-emerald-600 font-semibold">
+                <span>जमा रक्कम (Paid):</span>
+                <span>{formatINR(sale.amount_paid)}</span>
+              </div>
+              <div className="flex justify-between text-rose-600 font-bold text-sm">
+                <span>बाकी येणे (Balance Due):</span>
+                <span>{formatINR(sale.outstanding_balance)}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Terms and Signatures */}
-        <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-              अटी व शर्ती (Terms & Conditions):
-            </p>
-            <p className="text-slate-500 whitespace-pre-line text-[11px] mt-1">
-              {sale.terms_conditions || settings.invoice_terms}
-            </p>
-          </div>
+          {/* Terms and Signatures */}
+          <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                अटी व शर्ती (Terms & Conditions):
+              </p>
+              <p className="text-slate-500 whitespace-pre-line text-[11px] mt-1">
+                {sale.terms_conditions || settings.invoice_terms}
+              </p>
+            </div>
 
-          <div className="sm:text-right pt-6 sm:pt-0">
-            <p className="font-bold text-slate-800">{settings.shop_name} करिता</p>
-            <div className="h-12" />
-            <p className="text-slate-500 text-[11px]">अधिकृत स्वाक्षरी / Authorized Signatory</p>
+            <div className="sm:text-right pt-6 sm:pt-0">
+              <p className="font-bold text-slate-800">{settings.shop_name} करिता</p>
+              <div className="h-12" />
+              <p className="text-slate-500 text-[11px]">अधिकृत स्वाक्षरी / Authorized Signatory</p>
+            </div>
           </div>
         </div>
       </div>

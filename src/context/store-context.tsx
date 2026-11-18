@@ -151,14 +151,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   const [ledger, setLedger] = useState<CustomerLedgerEntry[]>(
     initialCustomerLedger,
   );
-  const [language, setLanguage] = useState<"mr" | "en">("mr");
+  const [language, setLanguageState] = useState<"mr" | "en">("mr");
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Browser-local persistence has been replaced by Supabase.
-  // refreshData() loads shared data and subscribes to realtime changes.
+  useEffect(() => {
+    const savedLanguage = window.localStorage.getItem("pumpflow_language");
+    if (savedLanguage === "mr" || savedLanguage === "en") {
+      setLanguageState(savedLanguage);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("pumpflow_language", language);
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const setLanguage = (lang: "mr" | "en") => {
+    setLanguageState(lang);
+  };
 
   const toggleLanguage = () => {
-    setLanguage((prev) => (prev === "mr" ? "en" : "mr"));
+    setLanguageState((prev) => {
+      const next = prev === "mr" ? "en" : "mr";
+      window.localStorage.setItem("pumpflow_language", next);
+      document.documentElement.lang = next;
+      return next;
+    });
   };
 
   // Customers CRUD

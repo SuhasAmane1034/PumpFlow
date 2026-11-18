@@ -307,7 +307,7 @@ ${settings.upi_id ? `💳 *UPI ID:* ${settings.upi_id}\n` : ""}
                       </td>
                       <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
                         <button
-                          onClick={() => generateInvoicePDF(sale, settings)}
+                          onClick={() => void generateInvoicePDF(sale, settings, customers.find((customer) => customer.id === sale.customer_id), language)}
                           className="p-1 rounded text-slate-500 hover:text-sky-600 hover:bg-slate-100 transition-colors"
                           title="Download Tax Invoice PDF"
                         >
